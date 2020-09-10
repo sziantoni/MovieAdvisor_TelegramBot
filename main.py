@@ -110,22 +110,6 @@ for i in range(0, len(TFIDF_Array)):
 
 #Lista delle 25.000 parole chiave migliori usate per descrivere i 5000 film
 keywords = sorted(list(dict.fromkeys(keywords)))
-'''
-#KEYWORD TESTER
-s = 'The film that i want to see would have action scenes, a alien invasion or a war conflict, i prefer to see a ' \
-    'American film because it is my favourite genre, so i want action, guns, explosion, car race, and a lovestory if ' \
-    'it is possible'
-
-w = s.lower().split(' ')
-kw = []
-for word in w:
-    if word in keywords:
-        kw.append(word)
-
-pprint(kw)
-'''
-
-print("READY!")
 
 def on_chat_message(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)  # glance lavora con ogni tipo di messaggio
