@@ -57,7 +57,7 @@ def on_callback_query(msg):
     bot.answerCallbackQuery(query_id, text="E bravo")
 
 
-bot = telepot.Bot("1242680480:AAHqZFER--FBoxgEq_cZIkup2eW49tW5oDQ")
+bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
 # specifico che devo usare un determinato gestore per la chat e un altro per le inlinequery
 MessageLoop(bot, {'chat': on_chat_message, 'callback_query': on_callback_query}).run_as_thread()
 print("listening...")
