@@ -1,5 +1,6 @@
 import time
 from pprint import pprint
+
 import pandas as pd
 import telepot
 from telepot.loop import MessageLoop
@@ -8,24 +9,27 @@ import sparql
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 movies_genres = ['crime', 'action', 'adventure', 'comedy', 'drama', 'fantasy', 'historical', 'horror', 'mystery'
-    , 'romance', 'saga', 'satire', 'thriller', 'science', 'urban', 'western', 'animation']
+    , 'romance', 'saga', 'satire', 'thriller', 'science', 'urban', 'western', 'animation', 'cowboys', 'country']
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
-punctuation = set("!@#$%^&*()_+<>?:.,;")
+punctuation = set("!@#$-%^&*()_+<>?:.,;")
 db = pd.read_csv(r"C:\Users\Stefano\Desktop\films.csv", sep=';', header=None)
+keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db)
 
-keywords = kc.keywordGenerator(db)
 
-genre = ''
+# keywords = ['action', 'police', 'american', 'army', 'chase', 'agencies', 'cia', 'fbi', 'special', 'effect']
 
 
 def on_chat_message(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)  # glance lavora con ogni tipo di messaggio
-
+    genre = ''
     if msg['text'] == '/start':
         bot.sendMessage(chat_id, "WELCOME TO MOVIE ADVISOR! \n\nTold me what kind of movies you want to see"
                                  "\nWrite a short description about the type of film you want to see\nthe longer"
                                  " description provided, the better result you get\n\nGive me a description")
     else:
+        kw_f = []
+        kw_s = []
+        kw_g = []
         kw = []
         kw_string = ''
         w = msg['text']
@@ -34,16 +38,27 @@ def on_chat_message(msg):
                 w = w.replace(p, "")
         w = w.lower().split(' ')
         for word in w:
-            if word in keywords:
-                if word not in kw:
+            if word in keywords_first:
+                if word not in kw_f and "ing" not in word:
+                    kw_f.append(word)
                     kw.append(word)
-                    kw_string = kw_string + str(word) + ' | '
+                    kw_string = kw_string + '1) ' + str(word) + ' | '
+            elif word in keyword_second or "ing" in word:
+                if word not in kw_s:
+                    kw_s.append(word)
+                    kw.append(word)
+                    kw_string = kw_string + '2) ' + str(word) + ' | '
+            elif word in keyword_general:
+                if word not in kw_g:
+                    kw_g.append(word)
+                    kw.append(word)
+                    kw_string = kw_string + '3) ' + str(word) + ' | '
         if len(kw) > 0:
             for k in kw:
                 if k in movies_genres:
                     genre = k
             if genre == '':
-                genre = 'film'
+                genre = 'award'
 
             query_first_part = 'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' \
                                'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
@@ -51,66 +66,107 @@ def on_chat_message(msg):
                                'PREFIX dbo: <http://dbpedia.org/ontology/> ' \
                                'PREFIX dbpprop: <http://dbpedia.org/property/> ' \
                                'PREFIX dbc: <http://dbpedia.org/resource/Category:> ' \
-                               'SELECT DISTINCT ?movie ?title ?score ?year ?abstract ?link ' \
+                               'SELECT DISTINCT ?id ?movie ?title ?score ?year1 ?abstract ?link ' \
                                'WHERE{ ' \
-                               'SELECT DISTINCT ?movie ?score ?abstract ?link (str(?movie_year3) as ?year) (str(?movie_title) as ?title) WHERE { ' \
+                               'SELECT DISTINCT ?id ?movie ?score ?abstract ?link ?year1 (str(?movie_title) as ?title) WHERE { ' \
+                               '?movie dbo:wikiPageID ?id. ' \
                                ' ?movie rdf:type dbo:Film. ' \
-                               '?movie rdfs:label ?movie_title. ' \
+                               '?movie rdfs:label ?movie_title ' \
+                               'FILTER REGEX(?movie_title, "[Ff]ilm"). '\
                                '?movie foaf:isPrimaryTopicOf ?link  . ' \
-                               '?movie dbo:abstract ?abstract  ' \
-                               'FILTER CONTAINS(?abstract, " ' + genre + ' "). '
+                               '?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
+                               'FILTER CONTAINS(?abstract, " ' + genre + ' "). ' \
+                                                                         '?movie dct:subject ?subject.  ?subject rdfs:label ?subject1. ' \
+                                                                         ' BIND((IF  (REGEX(?subject1, "' + genre + '"), 4 , 0)) AS ?special1). '
             query_second_part = ''
             scorer = ''
             count = 0
+            special = ''
             for k in kw:
-                if k == 'film' or k == 'movie':
+                if k in kw_f:
+                    weight = '3'
+                elif k in kw_s:
+                    weight = '2'
+                else:
+                    weight = '1'
+                if k == 'film' or k == 'movie' :
                     binder = ' BIND((IF (REGEX(?abstract, " [' + k[0].upper() + k[0].lower() + ']' + k[
-                                                                                                     1:] + 's "), 1, 0)) AS ?' + k + 's). '
+                                                                                                     1:] + 's "), ' + weight + ', 0)) AS ?' + k.replace("-", "") + 's). '
                     query_second_part = query_second_part + binder
                     if count == len(kw) - 1:
-                        scorer = scorer + '?' + k + 's'
+                        scorer = scorer + '?' + k.replace("-", "") + 's'
                     else:
-                        scorer = scorer + '?' + k + 's + '
+                        scorer = scorer + '?' + k.replace("-", "") + 's + '
                     count += 1
                     binder = ''
+                    special = ''
                 else:
                     binder = ' BIND((IF (REGEX(?abstract, " [' + k[0].upper() + k[0].lower() + ']' + k[
-                                                                                                     1:] + ' "), 1, 0)) AS ?' + k + '). '
-                    query_second_part = query_second_part + binder
+                                                                                                     1:] + ' "), ' + weight + ' , 0)) AS ?' + k.replace("-", "") + '). '
+                    if k in kw_f:
+                        special = ' BIND((IF  (REGEX(?subject1, "' + k + '"), ?special1 + 4 , 0)) AS ?special1). '
+                    query_second_part = query_second_part + binder + special
                     if count == len(kw) - 1:
-                        scorer = scorer + '?' + k
+                        scorer = scorer + '?' + k.replace("-", "")
+                        if "?special1" not in scorer:
+                            scorer = scorer + '?special1'
                     else:
-                        scorer = scorer + '?' + k + ' + '
+                        scorer = scorer + '?' + k.replace("-", "") + ' + '
+                        if "?special1" not in scorer:
+                            scorer = scorer + '?special1 + '
                     count += 1
                     binder = ''
+                    special = ''
 
             query_third_part = ' FILTER langMatches(lang(?movie_title), "EN") . ' \
-                               'optional { ?movie dbpprop:released   ?rel_year } ' \
-                               'optional{?movie dbo:releaseDate ?owl_year}. ' \
-                               'optional {?movie dct:subject ?sub. ' \
-                               '?sub rdfs:label ?movie_year_sub ' \
-                               'filter regex(?movie_year_sub, "(\\\\d{4}.films)") } ' \
-                               'BIND(REPLACE(COALESCE(?owl_year, ?rel_year, ?movie_year_sub), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                               'BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?movie_year3) ' \
-                               '}}group by ?title ORDER BY desc(?score) desc(?year) limit 5'
+                               '?subject rdfs:label ?year . ' \
+                               'filter regex(?year, "\\\\d{4}.films") .' \
+                               ' BIND(REPLACE(?year, "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) BIND(SUBSTR(str(?movie_year2), 0,  4) AS ?year1) ' \
+                               '}}group by ?title ORDER BY desc(?score) desc(?year1) limit 5'
 
             final_query = query_first_part + query_second_part + '  BIND((' + scorer + ') as ?score). ' + query_third_part
             sparql = SPARQLWrapper('http://dbpedia.org/sparql')
             sparql.setQuery(final_query)
             sparql.setReturnFormat(JSON)
             ret = sparql.query().convert()
+            print(final_query)
             print('\nKEYWORDS: ' + kw_string)
             print('---------------')
+            titles = []
+            abstracts = []
+            links = []
             for result in ret["results"]["bindings"]:
-                print('..........................')
-                print('FILM: ' + result["title"]["value"])
-                print('SCORE: ' + result["score"]["value"])
-                print('TRAMA: ' + result["abstract"]["value"])
-                print('LINK: ' + result["link"]["value"])
-                print('LINK DBPEDIA: ' + result["movie"]["value"])
-                print('..........................')
-            pprint('\n' + final_query)
-
+                titles.append(result["title"]["value"])
+                abstracts.append(
+                    (result["abstract"]["value"][:300] + '..') if len(result["abstract"]["value"]) > 300 else
+                    result["abstract"]["value"])
+                links.append(result["link"]["value"])
+            bot.sendMessage(chat_id, "I suggest you..\n\n")
+            if len(titles) == 5:
+                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
+                bot.sendMessage(chat_id, titles[1].upper() + '\n\n' + abstracts[1] + '\n\n' + links[1])
+                bot.sendMessage(chat_id, titles[2].upper() + '\n\n' + abstracts[2] + '\n\n' + links[2])
+                bot.sendMessage(chat_id, titles[3].upper() + '\n\n' + abstracts[3] + '\n\n' + links[3])
+                bot.sendMessage(chat_id, titles[4].upper() + '\n\n' + abstracts[4] + '\n\n' + links[4])
+                bot.sendMessage(chat_id, "Write again if you want search another film\n\n")
+            if len(titles) == 4:
+                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
+                bot.sendMessage(chat_id, titles[1].upper() + '\n\n' + abstracts[1] + '\n\n' + links[1])
+                bot.sendMessage(chat_id, titles[2].upper() + '\n\n' + abstracts[2] + '\n\n' + links[2])
+                bot.sendMessage(chat_id, titles[3].upper() + '\n\n' + abstracts[3] + '\n\n' + links[3])
+                bot.sendMessage(chat_id, "Write again if you want search another film\n\n")
+            if len(titles) == 3:
+                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
+                bot.sendMessage(chat_id, titles[1].upper() + '\n\n' + abstracts[1] + '\n\n' + links[1])
+                bot.sendMessage(chat_id, titles[2].upper() + '\n\n' + abstracts[2] + '\n\n' + links[2])
+                bot.sendMessage(chat_id, "Write again if you want search another film\n\n")
+            if len(titles) == 2:
+                bot.sendMessage(chat_id,titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
+                bot.sendMessage(chat_id, titles[1].upper() + '\n\n' + abstracts[1] + '\n\n' + links[1])
+                bot.sendMessage(chat_id, "Write again if you want search another film\n\n")
+            if len(titles) == 1:
+                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
+                bot.sendMessage(chat_id, "Write again if you want search another film\n\n")
         else:
             bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message")
 

@@ -7,6 +7,7 @@ import pandas as pd
 
 stopwords = open("stopwords.txt").read().splitlines()
 whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ')
+prohibited = ['film', 'movie']
 
 def keywordGenerator(db):
     bagsOfWords = numpy.empty(shape=(5000, 2), dtype=object)
@@ -92,23 +93,31 @@ def keywordGenerator(db):
 
     TFIDF_Matrix_Computation(TFMatrix, Idf)
 
-    keywords = []
-
+    keywords_general = []
+    keywords_first = []
+    keywords_second = []
     for i in range(0, len(TFIDF_Array)):
         words = TFIDF_Array[i][1]
         for j in range(0, 8):
-            if len(words[j][0]) > 2:
-                if words[j][0] not in stopwords:
-                    keywords.append(words[j][0])
+            if len(words[j][0]) > 3:
+                if words[j][0] not in stopwords and words[j][0] not in prohibited:
+                    if j == 0 or j == 1 and "ing" not in str(word[j][0]):
+                        keywords_first.append(words[j][0])
+                    elif j == 2 or j == 3 or "ing" in str(word[j][0]):
+                        keywords_second.append(words[j][0])
+                    else:
+                        keywords_general.append(words[j][0])
                 else:
                     j -= 1
             else:
                 j -= 1
 
     # Lista delle 25.000 parole chiave migliori usate per descrivere i 5000 film
-    keywords = sorted(list(dict.fromkeys(keywords)))
-    keywords.append("love")
-    keywords.append("lovestory")
-    keywords.append("love story")
-    return keywords
+    keywords_first = sorted(list(dict.fromkeys(keywords_first)))
+    keywords_second = sorted(list(dict.fromkeys(keywords_second)))
+    keywords_general = sorted(list(dict.fromkeys(keywords_general)))
+    keywords_first.append("love")
+    keywords_second.append("lovestory")
+    keywords_general.append("love story")
+    return keywords_first, keywords_second, keywords_general
 
