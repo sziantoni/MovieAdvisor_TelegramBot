@@ -28,6 +28,7 @@ def on_chat_message(msg):
                                  "\nWrite a short description about the type of film you want to see\nthe longer"
                                  " description provided, the better result you get\n\nGive me a description")
     else:
+        extra_part = ''
         kw_f = []
         kw_f_words = []
         kw_s = []
@@ -70,10 +71,11 @@ def on_chat_message(msg):
             if genre == '':
                 genre = 'award'
 
-            if genre != kw_f[0][0]:
-                top_word = kw_f[0][0]
-            else:
-                top_word = kw_f[1][0]
+            if len(kw_f) > 0:
+                if genre != kw_f[0][0]:
+                    top_word = kw_f[0][0]
+                elif len(kw_f)>1:
+                    top_word = kw_f[1][0]
             kw_f = sorted(kw_f, key=lambda x: x[1], reverse=True)
             query_first_part = 'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' \
                                'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
@@ -150,10 +152,11 @@ def on_chat_message(msg):
                                'filter regex(?year, "\\\\d{4}.films") .' \
                                ' BIND(REPLACE(?year, "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) BIND(SUBSTR(str(?movie_year2), 0,  4) AS ?year1) ' \
                                '}}group by ?title ORDER BY desc(?score) desc(?year1) limit 5'
-
-            extra_part = ' BIND((IF  (REGEX(?subject1, "[' + top_word[0].upper() + top_word[0].lower() + ']' + top_word[1:] + '"),  5 , 0)) AS ?special2 ). '
-
-            final_query = query_first_part + query_second_part + extra_part + '  BIND(( ?special2 + ' + scorer + ') as ?score). ' + query_third_part
+            if top_word != '':
+                extra_part = ' BIND((IF  (REGEX(?subject1, "[' + top_word[0].upper() + top_word[0].lower() + ']' + top_word[1:] + '"),  5 , 0)) AS ?special2 ). '
+                final_query = query_first_part + query_second_part + extra_part + '  BIND(( ?special2 + ' + scorer + ') as ?score). ' + query_third_part
+            else:
+                final_query = query_first_part + query_second_part + '  BIND(( ' + scorer + ') as ?score). ' + query_third_part
             print(final_query)
             print('\nKEYWORDS: ' + kw_string)
             print('---------------')

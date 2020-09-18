@@ -101,12 +101,14 @@ def keywordGenerator(db):
         for j in range(0, 8):
             if len(words[j][0]) > 3:
                 if words[j][0] not in stopwords and words[j][0] not in prohibited:
-                    if j == 0 or j == 1 and "ing" not in str(word[j][0]):
-                        keywords_first.append(words[j])
-                    elif j == 2 or j == 3 or "ing" in str(word[j][0]):
-                        keywords_second.append(words[j][0])
-                    else:
+                    if ("ing" not in str(word[j][0])) and  words[j][1] > 4 and words[j] not in keywords_first and words[j][0] not in keywords_second and words[j][0] not in keywords_general :
+                            keywords_first.append(words[j])
+                    elif "ing" not in str(word[j][0]) and words[j][1] > 2.8 and words[j] not in keywords_first and words[j][0] not in keywords_second and words[j][0] not in keywords_general:
+                            keywords_second.append(words[j][0])
+                    elif words[j] not in keywords_first and words[j][0] not in keywords_second and words[j][0] not in keywords_general:
                         keywords_general.append(words[j][0])
+                    else:
+                        j -= 1
                 else:
                     j -= 1
             else:
