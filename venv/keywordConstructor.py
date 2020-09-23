@@ -10,7 +10,7 @@ stopwords = open("stopwords.txt").read().splitlines()
 whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 -')
 prohibited = ['film', 'movie']
 nlp = spacy.load("en_core_web_sm")
-db_len = 6000
+db_len = 7000
 
 def keywordGenerator(db):
     bagsOfWords = numpy.empty(shape=(db_len, 2), dtype=object)
@@ -35,7 +35,8 @@ def keywordGenerator(db):
     uniqueWords = bagsOfWords[0][1]
 
     for x in range(1, len(bagsOfWords)):
-        uniqueWords = set(uniqueWords).union(set(bagsOfWords[x][1]))
+        if bagsOfWords[x][1] != None:
+            uniqueWords = set(uniqueWords).union(set(bagsOfWords[x][1]))
 
     # creo il dizionario con le occorrenze di ogni parola
     print('Unique word fatto!')
@@ -45,7 +46,7 @@ def keywordGenerator(db):
     for x in range(0, len(bagsOfWords)):
         numOfWords = dict.fromkeys(uniqueWords, 0)
         for word in bagsOfWords[y][1]:
-            numOfWords[word] += 1
+                numOfWords[word] += 1
         dictionary[y][0] = titles[y]
         dictionary[y][1] = numOfWords
         y += 1
@@ -56,8 +57,9 @@ def keywordGenerator(db):
     def TFcomputation(words, bag):
         TFcount = {}
         bagCount = len(bag)
-        for word in words:
-            TFcount[word] = words[word] / len(bag)
+        if len(bag) > 0:
+            for word in words:
+                TFcount[word] = words[word] / len(bag)
         return TFcount
 
     # IDF
@@ -91,9 +93,10 @@ def keywordGenerator(db):
     TFMatrix = numpy.empty(shape=(db_len, 2), dtype=object)
 
     for x in range(0, len(bagsOfWords)):
-        tfCurrent = TFcomputation(dictionary[x][1], bagsOfWords[x])
-        TFMatrix[x][0] = titles[x]
-        TFMatrix[x][1] = tfCurrent
+        if bagsOfWords[x][1] != None:
+            tfCurrent = TFcomputation(dictionary[x][1], bagsOfWords[x])
+            TFMatrix[x][0] = titles[x]
+            TFMatrix[x][1] = tfCurrent
     print('TF fatto!')
     Idf = IDFcomputation(dictionary[:, 1])
     print('IDF fatto!')

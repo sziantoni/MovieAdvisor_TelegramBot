@@ -9,11 +9,11 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 import spacy
 
 movies_genres = ['crime', 'action', 'adventure', 'comedy', 'drama', 'fantasy', 'historical', 'horror', 'mystery'
-    , 'romance', 'saga', 'satire', 'thriller', 'science', 'urban', 'western', 'animation', 'cowboys', 'country',
-                 'sci-fi', 'cartoon', 'detective', 'superhero']
+    , 'romantic', 'saga', 'satirical', 'thriller', 'scientific', 'urban', 'western', 'cowboys', 'country',
+                 'sci-fi', 'cartoon', 'detective', 'superhero', 'animated', 'investigative', 'documentary']
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
-punctuation = set("!@#$-%^&*()_+<>?:.,;")
-db = pd.read_csv(r"C:\Users\Stefano\Desktop\films.csv", sep=';', header=None)
+punctuation = set("!@#$-%^'&*()_+<>?:.,;")
+db = pd.read_csv(r"C:\Users\Stefano\Desktop\film_gigante.csv", sep=';', header=None)
 keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db)
 nlp = spacy.load("en_core_web_sm")
 
@@ -27,8 +27,6 @@ def on_chat_message(msg):
                                  " description provided, the better result you get\n\nGive me a description")
     else:
         doc = nlp(msg['text'])
-        for chunk in doc.noun_chunks:
-            print('\n' + chunk.text)
         extra_part = ''
         kw_f = []
         kw_f_words = []
@@ -56,7 +54,6 @@ def on_chat_message(msg):
             genre_score = '10'
         else:
             genre = 'award'
-        pprint(keywords_first)
         for i in range(0, len(keywords_first) - 1):
             for word in w:
                 if (word == keywords_first[i][0] or (word in keywords_first[i][0] and len(keywords_first[i][0]) - len(
@@ -123,6 +120,7 @@ def on_chat_message(msg):
                                    ' ?movie rdf:type dbo:Film. ' \
                                    '?movie rdfs:label ?movie_title ' \
                                    'FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
+                                   '?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "United States").' \
                                    '?movie foaf:isPrimaryTopicOf ?link  . ' \
                                    '?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
                                    'BIND((IF (REGEX(?abstract, "' + genre + '"), ' + genre_score + ' , 0)) AS ?genre_str). ' \
@@ -140,6 +138,7 @@ def on_chat_message(msg):
                                    ' ?movie rdf:type dbo:Film. ' \
                                    '?movie rdfs:label ?movie_title ' \
                                    'FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
+                                   '?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "United States").' \
                                    '?movie foaf:isPrimaryTopicOf ?link  . ' \
                                    '?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
                                    'BIND((IF (REGEX(?abstract, "' + genre + '"), 3 , 0)) AS ?genre_str). ' \
