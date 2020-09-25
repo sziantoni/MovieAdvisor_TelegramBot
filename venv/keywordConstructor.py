@@ -10,9 +10,8 @@ stopwords = open("stopwords.txt").read().splitlines()
 whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 -')
 prohibited = ['film', 'movie']
 nlp = spacy.load("en_core_web_sm")
-db_len = 7000
 
-def keywordGenerator(db):
+def keywordGenerator(db, db_len):
     bagsOfWords = numpy.empty(shape=(db_len, 2), dtype=object)
     titles = []
     y = 0
@@ -107,39 +106,30 @@ def keywordGenerator(db):
     keywords_general = []
     keywords_first = []
     keywords_second = []
-    kw_file1 = open("keyword_first_take.txt", "w")
-    kw_file2 = open("keyword_second_take.txt", "w")
-    kw_file3 = open("keyword_general_take.txt", "w")
     for i in range(0, len(TFIDF_Array)):
         words = TFIDF_Array[i][1]
         limit = 0
         if len(words) > 10:
-            limit = 10
+            limit = 8
         elif len(words) > 4:
-            limit = len(words) - 2
+            limit = len(words) - 3
         else:
             limit = len(words)
         for j in range(0, limit):
             if len(words[j][0]) > 3:
                 if words[j][0] not in stopwords and words[j][0] not in prohibited:
-                    if ("ing" not in str(words[j][0])) and  words[j][1] > 4.4 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
+                    if ("ing" not in str(words[j][0])) and  words[j][1] > 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
                             keywords_first.append(words[j])
-                            kw_file1.write("\n" + str(words[j]))
-                    elif "ing" not in str(words[j][0]) and words[j][1] > 2.0 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
+                    elif "ing" not in str(words[j][0]) and words[j][1] > 3.7  and words[j][1] < 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
                             keywords_second.append(words[j])
-                            kw_file2.write("\n" + str(words[j]))
-                    elif words[j][1] > 1.0 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
-                        keywords_general.append(words[j][0])
-                        kw_file3.write("\n" + str(words[j][0]))
+                    elif words[j][1] > 2 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
+                            keywords_general.append(words[j][0])
                     else:
                         j -= 1
                 else:
                     j -= 1
             else:
                 j -= 1
-    kw_file2.close()
-    kw_file1.close()
-    kw_file3.close()
 
     # Lista delle 25.000 parole chiave migliori usate per descrivere i 5000 film
     keywords_first.append(("love", 7.0))
