@@ -110,7 +110,7 @@ def keywordGenerator(db, db_len):
         words = TFIDF_Array[i][1]
         limit = 0
         if len(words) > 10:
-            limit = 8
+            limit = 10
         elif len(words) > 4:
             limit = len(words) - 3
         else:
@@ -118,11 +118,11 @@ def keywordGenerator(db, db_len):
         for j in range(0, limit):
             if len(words[j][0]) > 3:
                 if words[j][0] not in stopwords and words[j][0] not in prohibited:
-                    if ("ing" not in str(words[j][0])) and  words[j][1] > 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
+                    if  words[j][1] > 4.4 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
                             keywords_first.append(words[j])
-                    elif "ing" not in str(words[j][0]) and words[j][1] > 3.7  and words[j][1] < 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
+                    elif  words[j][1] > 4  and words[j][1] < 4.4 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
                             keywords_second.append(words[j])
-                    elif words[j][1] > 2 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
+                    elif words[j][1] > 3.5 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
                             keywords_general.append(words[j][0])
                     else:
                         j -= 1

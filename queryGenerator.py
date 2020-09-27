@@ -5,11 +5,12 @@ punctuation = set("!@#$-%^'&*()_+<>?:.,;")
 nlp = spacy.load("en_core_web_sm")
 movies_genres = ['crime', 'action', 'adventure', 'comedy', 'drama', 'fantasy', 'historical', 'horror', 'mystery'
     , 'romantic', 'saga', 'satirical', 'thriller', 'scientific', 'urban', 'western', 'cowboys', 'country',
-                 'sci-fi', 'cartoon', 'detective', 'superhero', 'animated', 'investigative', 'documentary']
+                 'sci-fi', 'science fiction', 'cartoon', 'detective', 'superhero', 'animated', 'investigative', 'space'
+                                                                                                                'documentary']
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
 
 
-def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_id):
+def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_id, language, year):
     doc = nlp(msg)
     genre = ''
     kw_f = []
@@ -104,17 +105,17 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                                ' ?movie rdfs:label ?movie_title ' \
                                ' FILTER langMatches(lang(?movie_title), "EN"). ' \
                                ' FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
-                               ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "United States").' \
-                               ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
-                               ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
-                               ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), ' + genre_score + ' , 0)) AS ?genre_str). ' \
-                                                                                                            ' ?movie  dct:subject ?subject. ' \
-                                                                                                            ' ?subject rdfs:label ?year. ' \
-                                                                                                            ' filter regex(?year, "\\\\d{4}.films"). ' \
-                                                                                                            ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                                                                                                            ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > 1990) ' \
-                                                                                                            ' ?movie dct:subject ?subject1. ' \
-                                                                                                            ' ?subject1 rdfs:label ?subj1 '
+                               ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(language) + '").' \
+                            ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
+                            ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
+                            ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), ' + genre_score + ' , 0)) AS ?genre_str). ' \
+                                                                                                         ' ?movie  dct:subject ?subject. ' \
+                                                                                                         ' ?subject rdfs:label ?year. ' \
+                                                                                                         ' filter regex(?year, "\\\\d{4}.films"). ' \
+                                                                                                         ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
+                                                                                                         ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
+                                                                                                         ' ?movie dct:subject ?subject1. ' \
+                                                                                                         ' ?subject1 rdfs:label ?subj1 '
         else:
             query_first_part = ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' \
                                ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
@@ -130,7 +131,7 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                                ' ?movie rdfs:label ?movie_title ' \
                                ' FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
                                ' FILTER langMatches(lang(?movie_title), "EN"). ' \
-                               ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "United States").' \
+                               ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(language) + '").' \
                                ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
                                ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
                                ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), 3 , 0)) AS ?genre_str). ' \
@@ -138,7 +139,7 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                                                                                      ' ?subject rdfs:label ?year. ' \
                                                                                      ' filter regex(?year, "\\\\d{4}.films"). ' \
                                                                                      ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                                                                                     ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > 1990) ' \
+                                                                                     ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
                                                                                      ' ?movie dct:subject ?subject1. ' \
                                                                                      ' ?subject1 rdfs:label ?subj1 '
         query_second_part = ''
@@ -158,7 +159,7 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                 weight = '2'
             else:
                 weight = '1'
-            if k == 'film' or k == 'movie' and k != kw_f[0][0] and len(k) > 2:
+            if k == 'film' or k == 'movie' and len(k) > 2:
                 binder = ' BIND((IF (REGEX(xsd:string(?abstract), " [' + k[0].upper() + k[0].lower() + ']' + k[
                                                                                                              1:] + 's "), ' + weight + ', 0)) AS ?' + k.replace(
                     "-", "") + 's). '
@@ -168,7 +169,7 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                 else:
                     scorer = scorer + '?' + k.replace("-", "") + 's + '
                 count += 1
-            elif k != kw_f[0][0] and len(k) > 2:
+            elif len(k) > 2:
                 binder = ' BIND((IF (REGEX(xsd:string(?abstract), " [' + k[0].upper() + k[0].lower() + ']' + k[
                                                                                                              1:] + ' "), ' + weight + ' , 0)) AS ?' + k.replace(
                     "-", "") + '). '
@@ -178,7 +179,7 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                 else:
                     scorer = scorer + '?' + k.replace("-", "") + ' + '
                 count += 1
-            elif k == kw_f[0][0] or len(k) <= 2:
+            elif len(k) <= 2:
                 count += 1
 
         query_second_part = query_first_part + query_second_part
@@ -210,10 +211,13 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                 final_score = final_score + '?special' + str(s1) + ' + '
             s1 += 1
             count += 1
+        binder = ' BIND((IF  (regex(xsd:string(?list), "' + genre + '"),  10 , 0)) AS ?genres ).  '
+        query_second_part = query_second_part + binder
         if final_score == '':
-            final_query = query_second_part + ' BIND((0 +?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
+            final_query = query_second_part + ' BIND((?genres +?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
         else:
+            final_score = ' ?genres + ' + final_score
             final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
     else:
-        bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message")
+        final_query = ''
     return final_query, kw_string
