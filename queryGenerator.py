@@ -3,14 +3,14 @@ import telepot
 
 punctuation = set("!@#$-%^'&*()_+<>?:.,;")
 nlp = spacy.load("en_core_web_sm")
-movies_genres = ['crime', 'action', 'adventure', 'comedy', 'drama', 'fantasy', 'historical', 'horror', 'mystery'
-    , 'romantic', 'saga', 'satirical', 'thriller', 'scientific', 'urban', 'western', 'cowboys', 'country',
-                 'sci-fi', 'science fiction', 'cartoon', 'detective', 'superhero', 'animated', 'investigative', 'space'
-                                                                                                                'documentary']
+movies_genres = ['crime', 'action', 'adventure', 'comedy', 'drama', 'fantasy', 'historical', 'horror', 'mystery',
+                 'romantic', 'saga', 'satirical', 'thriller', 'scientific', 'urban', 'western', 'cowboys', 'country',
+                 'sci-fi', 'science fiction', 'cartoon', 'detective', 'superhero', 'animated', 'investigative', 'space',
+                 'documentary']
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
 
 
-def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_id, language, year):
+def queryConstructor(msg, keywords_first, keyword_second, keyword_general, language, year):
     doc = nlp(msg)
     genre = ''
     kw_f = []
@@ -27,7 +27,6 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
         if p in w:
             w = w.replace(p, "")
     w = w.lower().split(' ')
-    genre_score = '0'
     for k in w:
         if k in movies_genres:
             if genre == '':
@@ -39,6 +38,7 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
         genre_score = '10'
     else:
         genre = 'award'
+        genre_score = '5'
     for i in range(0, len(keywords_first) - 1):
         for word in w:
             if (word == keywords_first[i][0] or (word in keywords_first[i][0] and len(keywords_first[i][0]) - len(
@@ -90,58 +90,32 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                                 if checker is False and res > 1:
                                     nounArray.append(testo)
                                     print(testo + '\n')
-        if genre_score != '0':
-            query_first_part = ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' \
-                               ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
-                               ' PREFIX dct: <http://purl.org/dc/terms/> ' \
-                               ' PREFIX dbo: <http://dbpedia.org/ontology/> ' \
-                               ' PREFIX dbpprop: <http://dbpedia.org/property/> ' \
-                               ' PREFIX dbc: <http://dbpedia.org/resource/Category:> ' \
-                               ' SELECT DISTINCT ?score  ?id ?movie ?movie_title ?year1 ?abstract ?link ?list  WHERE{ ' \
-                               ' { SELECT DISTINCT ?score1  ?id ?movie ?movie_title ?year1 ?abstract ?link (group_concat(distinct ?subj1; separator = ";") as ?list) ' \
-                               ' FROM <http://dbpedia.org>  WHERE{ ' \
-                               ' ?movie dbo:wikiPageID ?id. ' \
-                               ' ?movie rdf:type dbo:Film. ' \
-                               ' ?movie rdfs:label ?movie_title ' \
-                               ' FILTER langMatches(lang(?movie_title), "EN"). ' \
-                               ' FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
-                               ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(language) + '").' \
-                            ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
-                            ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
-                            ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), ' + genre_score + ' , 0)) AS ?genre_str). ' \
-                                                                                                         ' ?movie  dct:subject ?subject. ' \
-                                                                                                         ' ?subject rdfs:label ?year. ' \
-                                                                                                         ' filter regex(?year, "\\\\d{4}.films"). ' \
-                                                                                                         ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                                                                                                         ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
-                                                                                                         ' ?movie dct:subject ?subject1. ' \
-                                                                                                         ' ?subject1 rdfs:label ?subj1 '
-        else:
-            query_first_part = ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' \
-                               ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
-                               ' PREFIX dct: <http://purl.org/dc/terms/> ' \
-                               ' PREFIX dbo: <http://dbpedia.org/ontology/> ' \
-                               ' PREFIX dbpprop: <http://dbpedia.org/property/> ' \
-                               ' PREFIX dbc: <http://dbpedia.org/resource/Category:> ' \
-                               ' SELECT DISTINCT ?score  ?id ?movie ?movie_title ?year1 ?abstract ?link ?list  WHERE{ ' \
-                               ' { SELECT DISTINCT ?score1  ?id ?movie ?movie_title ?year1 ?abstract ?link (group_concat(distinct ?subj1; separator = ";") as ?list) ' \
-                               ' FROM <http://dbpedia.org>  WHERE{ ' \
-                               ' ?movie dbo:wikiPageID ?id. ' \
-                               ' ?movie rdf:type dbo:Film. ' \
-                               ' ?movie rdfs:label ?movie_title ' \
-                               ' FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
-                               ' FILTER langMatches(lang(?movie_title), "EN"). ' \
-                               ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(language) + '").' \
-                               ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
-                               ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
-                               ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), 3 , 0)) AS ?genre_str). ' \
-                                                                                     ' ?movie  dct:subject ?subject. ' \
-                                                                                     ' ?subject rdfs:label ?year. ' \
-                                                                                     ' filter regex(?year, "\\\\d{4}.films"). ' \
-                                                                                     ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                                                                                     ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
-                                                                                     ' ?movie dct:subject ?subject1. ' \
-                                                                                     ' ?subject1 rdfs:label ?subj1 '
+        query_first_part = ' PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> ' \
+                           ' PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
+                           ' PREFIX dct:<http://purl.org/dc/terms/> ' \
+                           ' PREFIX dbo:<http://dbpedia.org/ontology/> ' \
+                           ' PREFIX dbpprop:<http://dbpedia.org/property/> ' \
+                           ' PREFIX dbc:<http://dbpedia.org/resource/Category:> ' \
+                           ' SELECT DISTINCT ?score  ?id ?movie ?movie_title ?year1 ?abstract ?link ?list  WHERE{ ' \
+                           ' { SELECT DISTINCT ?score1  ?id ?movie ?movie_title ?year1 ?abstract ?link (group_concat(distinct ?subj1; separator = ";") as ?list) ' \
+                           ' FROM <http://dbpedia.org>  WHERE{ ' \
+                           ' ?movie dbo:wikiPageID ?id. ' \
+                           ' ?movie rdf:type dbo:Film. ' \
+                           ' ?movie rdfs:label ?movie_title ' \
+                           ' FILTER langMatches(lang(?movie_title), "EN"). ' \
+                           ' FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
+                           ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(
+            language) + '").' \
+                        ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
+                        ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
+                        ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), ' + genre_score + ' , 0)) AS ?genre_str). ' \
+                                                                                                     ' ?movie  dct:subject ?subject. ' \
+                                                                                                     ' ?subject rdfs:label ?year. ' \
+                                                                                                     ' filter regex(?year, "\\\\d{4}.films"). ' \
+                                                                                                     ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
+                                                                                                     ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
+                                                                                                                                                                                                ' ?movie dct:subject ?subject1. ' \
+                                                                                                                                                                                                ' ?subject1 rdfs:label ?subj1 '
         query_second_part = ''
         scorer = ''
         count = 0
@@ -159,17 +133,7 @@ def queryConstrcutor(msg, keywords_first, keyword_second, keyword_general, chat_
                 weight = '2'
             else:
                 weight = '1'
-            if k == 'film' or k == 'movie' and len(k) > 2:
-                binder = ' BIND((IF (REGEX(xsd:string(?abstract), " [' + k[0].upper() + k[0].lower() + ']' + k[
-                                                                                                             1:] + 's "), ' + weight + ', 0)) AS ?' + k.replace(
-                    "-", "") + 's). '
-                query_second_part = query_second_part + binder
-                if count == len(kw) - 1:
-                    scorer = scorer + '?' + k.replace("-", "") + 's'
-                else:
-                    scorer = scorer + '?' + k.replace("-", "") + 's + '
-                count += 1
-            elif len(k) > 2:
+            if len(k) > 2 and k != 'film' and k != 'movie':
                 binder = ' BIND((IF (REGEX(xsd:string(?abstract), " [' + k[0].upper() + k[0].lower() + ']' + k[
                                                                                                              1:] + ' "), ' + weight + ' , 0)) AS ?' + k.replace(
                     "-", "") + '). '

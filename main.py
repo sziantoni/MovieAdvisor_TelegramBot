@@ -13,7 +13,7 @@ year = '2000'
 msg_id = 0
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
 db = pd.read_csv(r"C:\Users\Stefano\Desktop\films_new_clear.csv", sep=';', header=None)
-keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 7500)
+keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 7378)
 #keywords_first, keyword_second, keyword_general = [], [], []
 print(str(len(keywords_first)))
 print(str(len(keyword_second)))
@@ -31,8 +31,7 @@ def on_chat_message(msg):
                                  " description provided, the better result you get\n\nDefault Nation: United States\n\nDefault Year: 2000",
                         reply_markup=keyboard)
     else:
-        final_query, kw_string = qG.queryConstrcutor(msg['text'], keywords_first, keyword_second, keyword_general,
-                                                     chat_id, language, year)
+        final_query, kw_string = qG.queryConstructor(msg['text'], keywords_first, keyword_second, keyword_general, language, year)
         if final_query != '':
             bot.sendMessage(chat_id, "OK give me a few seconds to look for some movies to recommend..\n")
             print(final_query)
@@ -51,31 +50,10 @@ def on_chat_message(msg):
                     result["abstract"]["value"])
                 links.append(result["link"]["value"])
             bot.sendMessage(chat_id, "I suggest you..\n\n")
-            if len(titles) == 5:
-                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
-                bot.sendMessage(chat_id, titles[1].upper() + '\n\n' + abstracts[1] + '\n\n' + links[1])
-                bot.sendMessage(chat_id, titles[2].upper() + '\n\n' + abstracts[2] + '\n\n' + links[2])
-                bot.sendMessage(chat_id, titles[3].upper() + '\n\n' + abstracts[3] + '\n\n' + links[3])
-                bot.sendMessage(chat_id, titles[4].upper() + '\n\n' + abstracts[4] + '\n\n' + links[4])
-                bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=keyboard5)
-            if len(titles) == 4:
-                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
-                bot.sendMessage(chat_id, titles[1].upper() + '\n\n' + abstracts[1] + '\n\n' + links[1])
-                bot.sendMessage(chat_id, titles[2].upper() + '\n\n' + abstracts[2] + '\n\n' + links[2])
-                bot.sendMessage(chat_id, titles[3].upper() + '\n\n' + abstracts[3] + '\n\n' + links[3])
-                bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=keyboard5)
-            if len(titles) == 3:
-                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
-                bot.sendMessage(chat_id, titles[1].upper() + '\n\n' + abstracts[1] + '\n\n' + links[1])
-                bot.sendMessage(chat_id, titles[2].upper() + '\n\n' + abstracts[2] + '\n\n' + links[2])
-                bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=keyboard5)
-            if len(titles) == 2:
-                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
-                bot.sendMessage(chat_id, titles[1].upper() + '\n\n' + abstracts[1] + '\n\n' + links[1])
-                bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=keyboard5)
-            if len(titles) == 1:
-                bot.sendMessage(chat_id, titles[0].upper() + '\n\n' + abstracts[0] + '\n\n' + links[0])
-                bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=keyboard5)
+            for i in range(0, len(titles) - 1):
+                bot.sendMessage(chat_id, titles[i].upper() + '\n\n' + abstracts[i] + '\n\n' + links[i])
+                if i == len(titles)-1:
+                    bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=keyboard5)
         else:
             bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message", reply_markup=keyboard5)
 

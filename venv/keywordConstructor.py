@@ -38,41 +38,41 @@ def keywordGenerator(db, db_len):
             uniqueWords = set(uniqueWords).union(set(bagsOfWords[x][1]))
 
     # creo il dizionario con le occorrenze di ogni parola
+    uniqueWords = list(uniqueWords)
     print('Unique word fatto!')
-    dictionary = numpy.empty(shape=(db_len, 2), dtype=object)
-
-    y = 0
+    dictionary = numpy.empty(shape=(db_len, len(uniqueWords)), dtype=object)
+    y=0
     for x in range(0, len(bagsOfWords)):
         numOfWords = dict.fromkeys(uniqueWords, 0)
+        numbers = []
         for word in bagsOfWords[y][1]:
                 numOfWords[word] += 1
-        dictionary[y][0] = titles[y]
-        dictionary[y][1] = numOfWords
+        dictionary[y,:]= [*numOfWords.values()]
         y += 1
 
-    # calcolo di tf-idf
     print('Dizionario fatto!')
     # TF
-    def TFcomputation(words, bag):
-        TFcount = {}
-        bagCount = len(bag)
+    def TFcomputation(bag, dictionary):
+        TFcount = dict.fromkeys(uniqueWords, 0)
+        bagCount = len(bag[1])
         if len(bag) > 0:
-            for word in words:
-                TFcount[word] = words[word] / len(bag)
+            for i in range(0, len(uniqueWords)):
+                TFcount[uniqueWords[i]] = dictionary[i]/ len(bag)
         return TFcount
 
     # IDF
-    def IDFcomputation(documents):
+    def IDFcomputation():
         import math
-        NDocs = len(documents)
-        idfDict = dict.fromkeys(documents[0].keys(), 0)
-        for document in documents:
-            for word, val in document.items():
-                if val > 0:
-                    idfDict[word] += 1
-
+        NDocs = len(titles)
+        idfDict = dict.fromkeys(uniqueWords, 0)
+        for i in range(0, len(uniqueWords)-1):
+            current = dictionary[:,i]
+            for x in current:
+                if x > 0:
+                    idfDict[uniqueWords[i]] += 1
         for word, val in idfDict.items():
-            idfDict[word] = math.log(NDocs / float(val))
+            if val > 0:
+                idfDict[word] = math.log(NDocs / float(val))
         return idfDict
 
     TFIDF_Array = numpy.empty(shape=(db_len, 2), dtype=object)
@@ -93,11 +93,11 @@ def keywordGenerator(db, db_len):
 
     for x in range(0, len(bagsOfWords)):
         if bagsOfWords[x][1] != None:
-            tfCurrent = TFcomputation(dictionary[x][1], bagsOfWords[x])
+            tfCurrent = TFcomputation(bagsOfWords[x], dictionary[x])
             TFMatrix[x][0] = titles[x]
             TFMatrix[x][1] = tfCurrent
     print('TF fatto!')
-    Idf = IDFcomputation(dictionary[:, 1])
+    Idf = IDFcomputation()
     print('IDF fatto!')
     del dictionary
     TFIDF_Matrix_Computation(TFMatrix, Idf)
@@ -106,6 +106,7 @@ def keywordGenerator(db, db_len):
     keywords_general = []
     keywords_first = []
     keywords_second = []
+    #RIVEDERE QUESTA PARTE
     for i in range(0, len(TFIDF_Array)):
         words = TFIDF_Array[i][1]
         limit = 0
@@ -118,9 +119,9 @@ def keywordGenerator(db, db_len):
         for j in range(0, limit):
             if len(words[j][0]) > 3:
                 if words[j][0] not in stopwords and words[j][0] not in prohibited:
-                    if  words[j][1] > 4.4 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
+                    if  words[j][1] > 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
                             keywords_first.append(words[j])
-                    elif  words[j][1] > 4  and words[j][1] < 4.4 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
+                    elif  words[j][1] > 4  and words[j][1] < 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
                             keywords_second.append(words[j])
                     elif words[j][1] > 3.5 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
                             keywords_general.append(words[j][0])
@@ -133,7 +134,9 @@ def keywordGenerator(db, db_len):
 
     # Lista delle 25.000 parole chiave migliori usate per descrivere i 5000 film
     keywords_first.append(("love", 7.0))
-    keywords_second.append("lovestory")
+    keywords_second.append(("lovestory", 4.0))
     keywords_general.append("love story")
+    keywords_first = sorted(keywords_first, key=lambda values: values[1], reverse=True)
+    keywords_second = sorted(keywords_second, key=lambda values: values[1], reverse=True)
     return keywords_first, keywords_second, keywords_general
 
