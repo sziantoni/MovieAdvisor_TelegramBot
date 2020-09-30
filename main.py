@@ -14,8 +14,8 @@ year = '2000'
 msg_id = 0
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
 db = pd.read_csv(r"C:\Users\Stefano\Desktop\films_new_clear.csv", sep=';', header=None)
-#keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 7378)
-keywords_first, keyword_second, keyword_general = [], [], []
+keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 7378)
+#keywords_first, keyword_second, keyword_general = [], [], []
 print(str(len(keywords_first)))
 print(str(len(keyword_second)))
 print(str(len(keyword_general)))
