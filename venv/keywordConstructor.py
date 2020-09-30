@@ -8,7 +8,7 @@ import spacy
 
 stopwords = open("stopwords.txt").read().splitlines()
 whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 -')
-prohibited = ['film', 'movie']
+prohibited = ['film', 'movie', 'fims', 'movies']
 nlp = spacy.load("en_core_web_sm")
 
 def keywordGenerator(db, db_len):
@@ -121,9 +121,9 @@ def keywordGenerator(db, db_len):
                 if words[j][0] not in stopwords and words[j][0] not in prohibited:
                     if  words[j][1] > 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
                             keywords_first.append(words[j])
-                    elif  words[j][1] > 4  and words[j][1] < 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
+                    elif  words[j][1] > 4.2  and words[j][1] < 4.5 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
                             keywords_second.append(words[j])
-                    elif words[j][1] > 3.5 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
+                    elif words[j][1] > 4 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
                             keywords_general.append(words[j][0])
                     else:
                         j -= 1

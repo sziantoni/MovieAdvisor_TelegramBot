@@ -90,98 +90,98 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                                 if checker is False and res > 1:
                                     nounArray.append(testo)
                                     print(testo + '\n')
-        query_first_part = ' PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> ' \
-                           ' PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
-                           ' PREFIX dct:<http://purl.org/dc/terms/> ' \
-                           ' PREFIX dbo:<http://dbpedia.org/ontology/> ' \
-                           ' PREFIX dbpprop:<http://dbpedia.org/property/> ' \
-                           ' PREFIX dbc:<http://dbpedia.org/resource/Category:> ' \
-                           ' SELECT DISTINCT ?score  ?id ?movie ?movie_title ?year1 ?abstract ?link ?list  WHERE{ ' \
-                           ' { SELECT DISTINCT ?score1  ?id ?movie ?movie_title ?year1 ?abstract ?link (group_concat(distinct ?subj1; separator = ";") as ?list) ' \
-                           ' FROM <http://dbpedia.org>  WHERE{ ' \
-                           ' ?movie dbo:wikiPageID ?id. ' \
-                           ' ?movie rdf:type dbo:Film. ' \
-                           ' ?movie rdfs:label ?movie_title ' \
-                           ' FILTER langMatches(lang(?movie_title), "EN"). ' \
-                           ' FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
-                           ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(
-            language) + '").' \
-                        ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
-                        ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
-                        ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), ' + genre_score + ' , 0)) AS ?genre_str). ' \
-                                                                                                     ' ?movie  dct:subject ?subject. ' \
-                                                                                                     ' ?subject rdfs:label ?year. ' \
-                                                                                                     ' filter regex(?year, "\\\\d{4}.films"). ' \
-                                                                                                     ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                                                                                                     ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
-                                                                                                                                                                                                ' ?movie dct:subject ?subject1. ' \
-                                                                                                                                                                                                ' ?subject1 rdfs:label ?subj1 '
-        query_second_part = ''
-        scorer = ''
-        count = 0
-        for noun in nounArray:
-            nouner = ' BIND((IF (REGEX(xsd:string(?abstract), "' + str(noun) + '"), 5 , 0)) AS ?' + str(
-                noun).replace(" ",
-                              "_") + 's). '
-            scorer = scorer + '?' + str(noun).replace(" ", "_") + 's + '
-            query_second_part = query_second_part + nouner
-        scorer = scorer + ' ?genre_str +'
-        for k in kw:
-            if k in kw_f_words:
-                weight = '4'
-            elif k in kw_s:
-                weight = '2'
-            else:
-                weight = '1'
-            if len(k) > 2 and k != 'film' and k != 'movie':
-                binder = ' BIND((IF (REGEX(xsd:string(?abstract), " [' + k[0].upper() + k[0].lower() + ']' + k[
-                                                                                                             1:] + ' "), ' + weight + ' , 0)) AS ?' + k.replace(
-                    "-", "") + '). '
-                query_second_part = query_second_part + binder
-                if count == len(kw) - 1:
-                    scorer = scorer + '?' + k.replace("-", "")
+            query_first_part = ' PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> ' \
+                               ' PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
+                               ' PREFIX dct:<http://purl.org/dc/terms/> ' \
+                               ' PREFIX dbo:<http://dbpedia.org/ontology/> ' \
+                               ' PREFIX dbpprop:<http://dbpedia.org/property/> ' \
+                               ' PREFIX dbc:<http://dbpedia.org/resource/Category:> ' \
+                               ' SELECT DISTINCT ?score  ?id ?movie ?movie_title ?year1 ?abstract ?link ?list  WHERE{ ' \
+                               ' { SELECT DISTINCT ?score1  ?id ?movie ?movie_title ?year1 ?abstract ?link (group_concat(distinct ?subj1; separator = ";") as ?list) ' \
+                               ' FROM <http://dbpedia.org>  WHERE{ ' \
+                               ' ?movie dbo:wikiPageID ?id. ' \
+                               ' ?movie rdf:type dbo:Film. ' \
+                               ' ?movie rdfs:label ?movie_title ' \
+                               ' FILTER langMatches(lang(?movie_title), "EN"). ' \
+                               ' FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
+                               ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(
+                language) + '").' \
+                            ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
+                            ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
+                            ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), ' + genre_score + ' , 0)) AS ?genre_str). ' \
+                                                                                                         ' ?movie  dct:subject ?subject. ' \
+                                                                                                         ' ?subject rdfs:label ?year. ' \
+                                                                                                         ' filter regex(?year, "\\\\d{4}.films"). ' \
+                                                                                                         ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
+                                                                                                         ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
+                                                                                                                                                                                                    ' ?movie dct:subject ?subject1. ' \
+                                                                                                                                                                                                    ' ?subject1 rdfs:label ?subj1 '
+            query_second_part = ''
+            scorer = ''
+            count = 0
+            for noun in nounArray:
+                nouner = ' BIND((IF (REGEX(xsd:string(?abstract), "' + str(noun) + '"), 5 , 0)) AS ?' + str(
+                    noun).replace(" ",
+                                  "_") + 's). '
+                scorer = scorer + '?' + str(noun).replace(" ", "_") + 's + '
+                query_second_part = query_second_part + nouner
+            scorer = scorer + ' ?genre_str +'
+            for k in kw:
+                if k in kw_f_words:
+                    weight = '4'
+                elif k in kw_s:
+                    weight = '2'
                 else:
-                    scorer = scorer + '?' + k.replace("-", "") + ' + '
-                count += 1
-            elif len(k) <= 2:
-                count += 1
+                    weight = '1'
+                if len(k) > 2 and k != 'film' and k != 'movie':
+                    binder = ' BIND((IF (REGEX(xsd:string(?abstract), " [' + k[0].upper() + k[0].lower() + ']' + k[
+                                                                                                                 1:] + ' "), ' + weight + ' , 0)) AS ?' + k.replace(
+                        "-", "") + '). '
+                    query_second_part = query_second_part + binder
+                    if count == len(kw) - 1:
+                        scorer = scorer + '?' + k.replace("-", "")
+                    else:
+                        scorer = scorer + '?' + k.replace("-", "") + ' + '
+                    count += 1
+                elif len(k) <= 2:
+                    count += 1
 
-        query_second_part = query_first_part + query_second_part
+            query_second_part = query_first_part + query_second_part
 
-        if scorer != ' ':
-            query_second_part = query_second_part + '  BIND(( ' + scorer + ') as ?score1).  }} '
-        else:
-            query_second_part = query_second_part + '  BIND(( 0 as ?score1).  }} '
-
-        s1 = 1
-        final_score = ''
-        count = 0
-        for noun in nounArray:
-            current = str(noun).strip()
-            n = ' BIND((IF (REGEX(xsd:string(?list), "[' + current[0].upper() + current[
-                0].lower() + ']' + current[1:] + '"), 10 , 0)) AS ?special' + str(s1) + ' ). '
-            final_score = final_score + '?special' + str(s1) + ' + '
-            query_second_part = query_second_part + n
-            s1 += 1
-
-        for x in kw_f_words:
-            binder = ' BIND((IF  (regex(xsd:string(?list), "[' + x[0].upper() + x[0].lower() + ']' + x[
-                                                                                                     1:] + '"),  5 , 0)) AS ?special' + str(
-                s1) + ' ).  '
-            query_second_part = query_second_part + binder
-            if count == (len(kw_f_words) - 1):
-                final_score = final_score + '?special' + str(s1)
+            if scorer != ' ':
+                query_second_part = query_second_part + '  BIND(( ' + scorer + ') as ?score1).  }} '
             else:
+                query_second_part = query_second_part + '  BIND(( 0 as ?score1).  }} '
+
+            s1 = 1
+            final_score = ''
+            count = 0
+            for noun in nounArray:
+                current = str(noun).strip()
+                n = ' BIND((IF (REGEX(xsd:string(?list), "[' + current[0].upper() + current[
+                    0].lower() + ']' + current[1:] + '"), 10 , 0)) AS ?special' + str(s1) + ' ). '
                 final_score = final_score + '?special' + str(s1) + ' + '
-            s1 += 1
-            count += 1
-        binder = ' BIND((IF  (regex(xsd:string(?list), "' + genre + '"),  10 , 0)) AS ?genres ).  '
-        query_second_part = query_second_part + binder
-        if final_score == '':
-            final_query = query_second_part + ' BIND((?genres +?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
-        else:
-            final_score = ' ?genres + ' + final_score
-            final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
+                query_second_part = query_second_part + n
+                s1 += 1
+
+            for x in kw_f_words:
+                binder = ' BIND((IF  (regex(xsd:string(?list), "[' + x[0].upper() + x[0].lower() + ']' + x[
+                                                                                                         1:] + '"),  5 , 0)) AS ?special' + str(
+                    s1) + ' ).  '
+                query_second_part = query_second_part + binder
+                if count == (len(kw_f_words) - 1):
+                    final_score = final_score + '?special' + str(s1)
+                else:
+                    final_score = final_score + '?special' + str(s1) + ' + '
+                s1 += 1
+                count += 1
+            binder = ' BIND((IF  (regex(xsd:string(?list), "' + genre + '"),  10 , 0)) AS ?genres ).  '
+            query_second_part = query_second_part + binder
+            if final_score == '':
+                final_query = query_second_part + ' BIND((?genres +?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
+            else:
+                final_score = ' ?genres + ' + final_score
+                final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
     else:
         final_query = ''
     return final_query, kw_string
