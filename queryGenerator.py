@@ -15,6 +15,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
     genre = ''
     kw_f = []
     kw_f_words = []
+    kw_s_words = []
     kw_s = []
     kw_g = []
     kw = []
@@ -46,15 +47,16 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                 kw_f.append(keywords_first[i])
                 kw_f_words.append(word)
                 kw.append(word)
-                kw_string = kw_string + '1) ' + str(word) + ' | '
+                kw_string = kw_string + '1) ' + str(word) + str(keywords_first[i][1]) + ' | '
 
     for i in range(0, len(keyword_second) - 1):
         for word in w:
             if word == keyword_second[i][0] or "ing" in word and len(word) > 2:
                 if word not in kw_string:
                     kw_s.append(word)
+                    kw_s_words.append(word)
                     kw.append(word)
-                    kw_string = kw_string + '2) ' + str(word) + ' | '
+                    kw_string = kw_string + '2) ' + str(word) + str(keyword_second[i][1]) + ' | '
     for word in w:
         if word in keyword_general:
             if word not in kw_string and len(word) > 2:
@@ -68,28 +70,21 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
         nounArray = []
         print('CHUNKER:\n')
         for chunk in doc.noun_chunks:
+            text = chunk.text.lower()
             for key in kw:
-                if key in chunk.text:
-                    first = key
-                    for key_ in kw:
-                        if key_ in chunk.text and key_ != first:
-                            txt = nlp(chunk.text)
-                            result = ''
-                            for tk in txt:
-                                pos = str(tk.pos_)
-                                if pos != 'CONJ' and pos != 'PRON' and pos != 'ADV' and pos != 'ADP' and pos != 'PUNCT' and pos != 'SCONJ' and pos != 'DET':
-                                    result = result + ' ' + tk.text
-                                testo = result
-                                res = len(testo.split())
-                                checker = False
-                                for n in nounArray:
-                                    if n in testo:
-                                        checker = True
-                                    if testo in n:
-                                        checker = True
-                                if checker is False and res > 1:
-                                    nounArray.append(testo)
-                                    print(testo + '\n')
+                if key in text:
+                    for k in kw:
+                        if k in text and k is not key:
+                            if text[0] == 'a' and text[1] == 'n' and text[2] == ' ':
+                                text = text[3:]
+                            if text[0] == 'a' and text[1] == ' ':
+                                text = text[2:]
+                            if text[0] == 't' and text[1] == 'h' and text[2] == 'e' and text[3] == ' ':
+                                text = text[4:]
+                            if len(text) - (len(k) + len(key)) == 1:
+                                if text not in nounArray:
+                                    nounArray.append(text)
+                                    print(text)
             query_first_part = ' PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> ' \
                                ' PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
                                ' PREFIX dct:<http://purl.org/dc/terms/> ' \
@@ -120,10 +115,10 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             scorer = ''
             count = 0
             for noun in nounArray:
-                nouner = ' BIND((IF (REGEX(xsd:string(?abstract), "' + str(noun) + '"), 5 , 0)) AS ?' + str(
-                    noun).replace(" ",
-                                  "_") + 's). '
-                scorer = scorer + '?' + str(noun).replace(" ", "_") + 's + '
+                support = str(noun).replace(" ", "_")
+                support = support.replace("-", "_")
+                nouner = ' BIND((IF (REGEX(xsd:string(?abstract), "' + str(noun) + '"), 5 , 0)) AS ?' + support + 's). '
+                scorer = scorer + '?' + support + 's + '
                 query_second_part = query_second_part + nouner
             scorer = scorer + ' ?genre_str +'
             for k in kw:
@@ -155,7 +150,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
 
             s1 = 1
             final_score = ''
-            count = 0
+
             for noun in nounArray:
                 current = str(noun).strip()
                 n = ' BIND((IF (REGEX(xsd:string(?list), "[' + current[0].upper() + current[
@@ -163,10 +158,10 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                 final_score = final_score + '?special' + str(s1) + ' + '
                 query_second_part = query_second_part + n
                 s1 += 1
-
+            count = 0
             for x in kw_f_words:
                 binder = ' BIND((IF  (regex(xsd:string(?list), "[' + x[0].upper() + x[0].lower() + ']' + x[
-                                                                                                         1:] + '"),  5 , 0)) AS ?special' + str(
+                                                                                                         1:] + '"),  7 , 0)) AS ?special' + str(
                     s1) + ' ).  '
                 query_second_part = query_second_part + binder
                 if count == (len(kw_f_words) - 1):
@@ -175,11 +170,27 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                     final_score = final_score + '?special' + str(s1) + ' + '
                 s1 += 1
                 count += 1
+            if len(kw_s_words) > 0:
+                count = 0
+                final_score = final_score + ' + '
+                for x in kw_s_words:
+                    binder = ' BIND((IF  (regex(xsd:string(?list), "[' + x[0].upper() + x[0].lower() + ']' + x[
+                                                                                                             1:] + '"),  4 , 0)) AS ?special' + str(
+                        s1) + ' ).  '
+                    query_second_part = query_second_part + binder
+                    if count == (len(kw_s_words) - 1):
+                        final_score = final_score + '?special' + str(s1)
+                    else:
+                        final_score = final_score + '?special' + str(s1) + ' + '
+                    s1 += 1
+                    count += 1
             binder = ' BIND((IF  (regex(xsd:string(?list), "' + genre + '"),  10 , 0)) AS ?genres ).  '
             query_second_part = query_second_part + binder
             if final_score == '':
                 final_query = query_second_part + ' BIND((?genres +?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
             else:
+                if final_score[len(final_score) - 2] == '+':
+                    final_score = final_score[:-2] + ' '
                 final_score = ' ?genres + ' + final_score
                 final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
     else:
