@@ -6,6 +6,7 @@ from pprint import pprint
 import pandas as pd
 import spacy
 import time
+import csv
 
 stopwords = open("stopwords.txt").read().splitlines()
 whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 -')
@@ -13,6 +14,9 @@ prohibited = ['film', 'movie', 'fims', 'movies']
 nlp = spacy.load("en_core_web_sm")
 
 def keywordGenerator(db, db_len):
+    keyword_1 = open('kw1.csv', 'w', newline='')
+    keyword_2 = open('kw2.csv', 'w', newline='')
+    keyword_3 = open('kw3.csv', 'w', newline='')
     seconds = time.time()
     bagsOfWords = numpy.empty(shape=(db_len, 2), dtype=object)
     titles = []
@@ -109,29 +113,32 @@ def keywordGenerator(db, db_len):
     keywords_first = []
     keywords_second = []
     #RIVEDERE QUESTA PARTE
+    writer1 = csv.writer(keyword_1, delimiter=';')
+    writer2 = csv.writer(keyword_2, delimiter=';')
+    writer3 = csv.writer(keyword_3, delimiter=';')
     for i in range(0, len(TFIDF_Array)):
         words = TFIDF_Array[i][1]
-        limit = 10
-        for j in range(0, limit):
+        for j in range(0, len(words)-1):
             if len(words[j][0]) > 3:
                 if words[j][0] not in stopwords and words[j][0] not in prohibited:
-                    if  words[j][1] > 0.34 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
+                    if  words[j][1] > 0.42 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
                             keywords_first.append(words[j])
-                    elif  words[j][1] > 0.3  and words[j][1] < 0.34 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
+                            writer1.writerow([words[j][0], words[j][1]])
+                    elif  words[j][1] > 0.35  and words[j][1] < 0.42 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
                             keywords_second.append(words[j])
-                    elif words[j][1] > 0.25 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
+                            writer2.writerow([words[j][0], words[j][1]])
+                    elif words[j][1] > 0.3 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
                             keywords_general.append(words[j][0])
-                    else:
-                        j -= 1
-                else:
-                    j -= 1
-            else:
-                j -= 1
+                            writer3.writerow([words[j][0]])
+
 
     # Lista delle 25.000 parole chiave migliori usate per descrivere i 5000 film
     keywords_first = sorted(keywords_first, key=lambda values: values[1], reverse=True)
     keywords_second = sorted(keywords_second, key=lambda values: values[1], reverse=True)
     seconds1 = time.time()
+    keyword_1.close()
+    keyword_2.close()
+    keyword_3.close()
     print("Seconds since epoch =", seconds1-seconds)
     return keywords_first, keywords_second, keywords_general
 

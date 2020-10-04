@@ -9,13 +9,31 @@ import queryGenerator as qG
 from keyboards import keyboard, keyboard5
 import inlineKeyboardSelector
 import keywordConstructor as kc
+import csv
+
 language = 'United States'
 year = '2000'
 msg_id = 0
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
-db = pd.read_csv(r"C:\Users\Stefano\Desktop\films_new_clear.csv", sep=';', header=None)
-keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 7378)
-#keywords_first, keyword_second, keyword_general = [], [], []
+#db = pd.read_csv(r"C:\Users\Stefano\Desktop\nuovo_db_18000.csv", sep=';', header=None)
+#keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 18857)
+keywords_first, keyword_second, keyword_general = [],[],[]
+
+with open('kw1.csv', 'r') as kw_1:
+    csv_reader = csv.reader(kw_1, delimiter=';')
+    for row in csv_reader:
+        keywords_first.append((row[0], row[1]))
+
+with open('kw2.csv', 'r') as kw_2:
+    csv_reader = csv.reader(kw_2, delimiter=';')
+    for row in csv_reader:
+        keyword_second.append((row[0], row[1]))
+
+with open('kw3.csv', 'r') as kw_3:
+    csv_reader = csv.reader(kw_3, delimiter=';')
+    for row in csv_reader:
+        keyword_general.append(row[0])
+
 print(str(len(keywords_first)))
 print(str(len(keyword_second)))
 print(str(len(keyword_general)))
@@ -38,7 +56,8 @@ def on_chat_message(msg):
         for token in doc:
             if str(token.text) != str(token.lemma_):
                 msg['text'] = msg['text'] + ' ' + str(token.lemma_)
-        final_query, kw_string = qG.queryConstructor(msg['text'], keywords_first, keyword_second, keyword_general, language, year)
+        final_query, kw_string = qG.queryConstructor(msg['text'], keywords_first, keyword_second, keyword_general,
+                                                     language, year)
         if final_query != '':
             bot.sendMessage(chat_id, "OK give me a few seconds to look for some movies to recommend..\n")
             print(final_query)
@@ -57,13 +76,14 @@ def on_chat_message(msg):
                     result["abstract"]["value"])
                 links.append(result["link"]["value"])
             bot.sendMessage(chat_id, "I suggest you..\n\n")
-            i=0
+            i = 0
             for x in titles:
                 bot.sendMessage(chat_id, titles[i].upper() + '\n\n' + abstracts[i] + '\n\n' + links[i])
                 i += 1
             bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=keyboard5)
         else:
-            bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message", reply_markup=keyboard5)
+            bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message",
+                            reply_markup=keyboard5)
 
 
 def on_callback_query(msg):

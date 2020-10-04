@@ -37,9 +37,11 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
     if genre != '':
         genre = genre + '.*$'
         genre_score = '10'
+        genre_penality = '-7'
     else:
         genre = 'award'
         genre_score = '5'
+        genre_penality = '-2'
     for i in range(0, len(keywords_first) - 1):
         for word in w:
             if (word == keywords_first[i][0] or (word in keywords_first[i][0] and len(keywords_first[i][0]) - len(
@@ -103,34 +105,50 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                 language) + '").' \
                             ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
                             ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
-                            ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), ' + genre_score + ' , 0)) AS ?genre_str). ' \
-                                                                                                         ' ?movie  dct:subject ?subject. ' \
-                                                                                                         ' ?subject rdfs:label ?year. ' \
-                                                                                                         ' filter regex(?year, "\\\\d{4}.films"). ' \
-                                                                                                         ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                                                                                                         ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
-                                                                                                                                                                                                    ' ?movie dct:subject ?subject1. ' \
-                                                                                                                                                                                                    ' ?subject1 rdfs:label ?subj1 '
+                            ' BIND((IF (REGEX(xsd:string(?abstract), "' + genre + '"), ' + genre_score + ' , ' + genre_penality + ')) AS ?genre_str). ' \
+                                                                                                                                  ' ?movie  dct:subject ?subject. ' \
+                                                                                                                                  ' ?subject rdfs:label ?year. ' \
+                                                                                                                                  ' filter regex(?year, "\\\\d{4}.films"). ' \
+                                                                                                                                  ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
+                                                                                                                                  ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
+                                                                                                                                                                                                                             ' ?movie dct:subject ?subject1. ' \
+                                                                                                                                                                                                                             ' ?subject1 rdfs:label ?subj1 '
             query_second_part = ''
             scorer = ''
             count = 0
             for noun in nounArray:
                 support = str(noun).replace(" ", "_")
                 support = support.replace("-", "_")
-                nouner = ' BIND((IF (REGEX(xsd:string(?abstract), "' + str(noun) + '"), 5 , 0)) AS ?' + support + 's). '
+                nouner = ' BIND((IF (REGEX(xsd:string(?abstract), "' + str(
+                    noun) + '"), 5 , -3)) AS ?' + support + 's). '
                 scorer = scorer + '?' + support + 's + '
                 query_second_part = query_second_part + nouner
             scorer = scorer + ' ?genre_str +'
             for k in kw:
                 if k in kw_f_words:
-                    weight = '4'
-                elif k in kw_s:
-                    weight = '2'
+                    weight = '6'
+                    if len(kw_f) < 3 and len(kw_s) < 3:
+                        penalties = '-5'
+                    elif len(kw_f) < 3 and len(kw_s) > 2:
+                        penalties = '-3'
+                    else:
+                        penalties = '-2'
+                elif k in kw_s_words:
+                    if len(kw_f) == 0 and len(kw_s) < 3:
+                        weight = '6'
+                        penalties = '-5'
+                    elif len(kw_f) == 0 and len(kw_s) > 2:
+                        weight = '6'
+                        penalties = '-2'
+                    else:
+                        weight = '3'
+                        penalties = '-1'
                 else:
                     weight = '1'
+                    penalties = '-1'
                 if len(k) > 2 and k != 'film' and k != 'movie':
                     binder = ' BIND((IF (REGEX(xsd:string(?abstract), " [' + k[0].upper() + k[0].lower() + ']' + k[
-                                                                                                                 1:] + ' "), ' + weight + ' , 0)) AS ?' + k.replace(
+                                                                                                                 1:] + ' "), ' + weight + ' , ' + penalties + ')) AS ?' + k.replace(
                         "-", "") + '). '
                     query_second_part = query_second_part + binder
                     if count == len(kw) - 1:
@@ -154,14 +172,14 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             for noun in nounArray:
                 current = str(noun).strip()
                 n = ' BIND((IF (REGEX(xsd:string(?list), "[' + current[0].upper() + current[
-                    0].lower() + ']' + current[1:] + '"), 10 , 0)) AS ?special' + str(s1) + ' ). '
+                    0].lower() + ']' + current[1:] + '"), 10 , -4)) AS ?special' + str(s1) + ' ). '
                 final_score = final_score + '?special' + str(s1) + ' + '
                 query_second_part = query_second_part + n
                 s1 += 1
             count = 0
             for x in kw_f_words:
                 binder = ' BIND((IF  (regex(xsd:string(?list), "[' + x[0].upper() + x[0].lower() + ']' + x[
-                                                                                                         1:] + '"),  7 , 0)) AS ?special' + str(
+                                                                                                         1:] + '"),  7 , -4)) AS ?special' + str(
                     s1) + ' ).  '
                 query_second_part = query_second_part + binder
                 if count == (len(kw_f_words) - 1):
@@ -175,7 +193,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                 final_score = final_score + ' + '
                 for x in kw_s_words:
                     binder = ' BIND((IF  (regex(xsd:string(?list), "[' + x[0].upper() + x[0].lower() + ']' + x[
-                                                                                                             1:] + '"),  4 , 0)) AS ?special' + str(
+                                                                                                             1:] + '"),  4 , -1)) AS ?special' + str(
                         s1) + ' ).  '
                     query_second_part = query_second_part + binder
                     if count == (len(kw_s_words) - 1):
@@ -184,7 +202,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                         final_score = final_score + '?special' + str(s1) + ' + '
                     s1 += 1
                     count += 1
-            binder = ' BIND((IF  (regex(xsd:string(?list), "' + genre + '"),  10 , 0)) AS ?genres ).  '
+            binder = ' BIND((IF  (regex(xsd:string(?list), "' + genre + '"),  10 , -6)) AS ?genres ).  '
             query_second_part = query_second_part + binder
             if final_score == '':
                 final_query = query_second_part + ' BIND((?genres +?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
