@@ -14,9 +14,7 @@ prohibited = ['film', 'movie', 'fims', 'movies']
 nlp = spacy.load("en_core_web_sm")
 
 def keywordGenerator(db, db_len):
-    keyword_1 = open('kw1.csv', 'w', newline='')
-    keyword_2 = open('kw2.csv', 'w', newline='')
-    keyword_3 = open('kw3.csv', 'w', newline='')
+    keyword_6 = open('keywords.csv', 'w', newline='')
     seconds = time.time()
     bagsOfWords = numpy.empty(shape=(db_len, 2), dtype=object)
     titles = []
@@ -51,9 +49,11 @@ def keywordGenerator(db, db_len):
     for x in range(0, len(bagsOfWords)):
         numOfWords = dict.fromkeys(uniqueWords, 0)
         numbers = []
-        for word in bagsOfWords[y][1]:
-                numOfWords[word] += 1
-        dictionary[y,:]= [*numOfWords.values()]
+        if bagsOfWords[y][1] != None:
+            for word in bagsOfWords[y][1]:
+                if word != '':
+                    numOfWords[word] += 1
+            dictionary[y,:]= [*numOfWords.values()]
         y += 1
 
     print('Dizionario fatto!')
@@ -73,9 +73,11 @@ def keywordGenerator(db, db_len):
         idfDict = dict.fromkeys(uniqueWords, 0)
         for i in range(0, len(uniqueWords)-1):
             current = dictionary[:,i]
+            ciao = 1
             for x in current:
-                if x > 0:
-                    idfDict[uniqueWords[i]] += 1
+                if x != None:
+                    if x > 0:
+                        idfDict[uniqueWords[i]] += 1
         for word, val in idfDict.items():
             if val > 0:
                 idfDict[word] = math.log(NDocs / float(val))
@@ -88,11 +90,12 @@ def keywordGenerator(db, db_len):
         y = 0
         for i in TFMatrix[:, 1]:
             tfidf = {}
-            for word, val in i.items():
-                if val > 0 and len(word)>2:
-                    tfidf[word] = val * Idf[word]
-            TFIDF_Array[y][0] = titles[y]
-            TFIDF_Array[y][1] = sorted(tfidf.items(), key=lambda values: values[1], reverse=True)
+            if i != None:
+                for word, val in i.items():
+                    if val > 0 and len(word)>2:
+                        tfidf[word] = val * Idf[word]
+                TFIDF_Array[y][0] = titles[y]
+                TFIDF_Array[y][1] = sorted(tfidf.items(), key=lambda values: values[1], reverse=True)
             y += 1
 
     TFMatrix = numpy.empty(shape=(db_len, 2), dtype=object)
@@ -102,6 +105,7 @@ def keywordGenerator(db, db_len):
             tfCurrent = TFcomputation(bagsOfWords[x], dictionary[x])
             TFMatrix[x][0] = titles[x]
             TFMatrix[x][1] = tfCurrent
+
     print('TF fatto!')
     Idf = IDFcomputation()
     print('IDF fatto!')
@@ -112,33 +116,116 @@ def keywordGenerator(db, db_len):
     keywords_general = []
     keywords_first = []
     keywords_second = []
-    #RIVEDERE QUESTA PARTE
-    writer1 = csv.writer(keyword_1, delimiter=';')
-    writer2 = csv.writer(keyword_2, delimiter=';')
-    writer3 = csv.writer(keyword_3, delimiter=';')
-    for i in range(0, len(TFIDF_Array)):
+    writer6 = csv.writer(keyword_6, delimiter=';')
+
+    for u in uniqueWords:
+        current = 0
+        min = 0
+        max = 0
+        accumulator = 0
+        count = 0
+        for i in range(0, len(TFIDF_Array) - 1):
+            words = TFIDF_Array[i][1]
+            if words != None:
+                for word in words:
+                    if word[0] == u:
+                        accumulator += word[1]
+                        count += 1
+                        current = word[1]
+                        if current < min or min == 0:
+                            min = current
+                        elif current > max:
+                            max = current
+        if min != 0 and max != 0 and count != 0 and accumulator != 0:
+            tot = accumulator / count
+            writer6.writerow([u,min,max,tot])
+
+    keyword_6.close()
+    keywords_first, keyword_second, keyword_general = [], [], []
+
+    with open('keywords.csv', 'r') as kw_1:
+        csv_reader = csv.reader(kw_1, delimiter=';')
+        for row in csv_reader:
+            value = row[1].replace(",", ".")
+            if float(value) > 0.38 and len(row[0]) > 4:
+                keywords_first.append((row[0], value))
+            elif 0.27 < float(value) < 0.38 and len(row[0]) > 4:
+                keyword_second.append((row[0], value))
+            elif 0.21 < float(value) < 0.27 and len(row[0]) > 4:
+                keyword_general.append(row[0])
+
+    print("Keyword Inserite")
+
+    return keywords_first, keywords_second, keywords_general
+
+
+
+
+
+
+    #keyword_1 = open('kw1.csv', 'w', newline='')
+    #keyword_2 = open('kw2.csv', 'w', newline='')
+    #keyword_3 = open('kw3.csv', 'w', newline='')
+    #writer1 = csv.writer(keyword_1, delimiter=';')
+    #writer2 = csv.writer(keyword_2, delimiter=';')
+    #writer3 = csv.writer(keyword_3, delimiter=';')
+
+    '''
+
+    for i in range(0, len(TFIDF_Array)-1):
         words = TFIDF_Array[i][1]
-        for j in range(0, len(words)-1):
-            if len(words[j][0]) > 3:
-                if words[j][0] not in stopwords and words[j][0] not in prohibited:
-                    if  words[j][1] > 0.42 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general :
-                            keywords_first.append(words[j])
-                            writer1.writerow([words[j][0], words[j][1]])
-                    elif  words[j][1] > 0.35  and words[j][1] < 0.42 and words[j] not in keywords_first and words[j] not in keywords_second and str(words[j][0]) not in keywords_general:
-                            keywords_second.append(words[j])
-                            writer2.writerow([words[j][0], words[j][1]])
-                    elif words[j][1] > 0.3 and words[j] not in keywords_first and words[j] not in keywords_second and words[j][0] not in keywords_general:
-                            keywords_general.append(words[j][0])
-                            writer3.writerow([words[j][0]])
+        if words != None:
+            for word in words:
+                    if len(word[0])>4:
+                        if word[1] > 0.4:
+                            if word[0] in [item[0] for item in keywords_first]:
+                                added = [item for item in keywords_first if item[0] == word[0]]
+                                if added[0][1] < word[1]:
+                                    keywords_first.remove(added[0])
+                                    keywords_first.append(word)
+                                    if word[0] in [item[0] for item in keywords_second]:
+                                        added = [item for item in keywords_second if item[0] == word[0]]
+                                        keywords_second.remove(added[0])
+                                    if word[0] in keywords_general:
+                                        keywords_general.remove(word[0])
+                            else:
+                                keywords_first.append(word)
+                                if word[0] in [item[0] for item in keywords_second]:
+                                    added = [item for item in keywords_second if item[0] == word[0]]
+                                    keywords_second.remove(added[0])
+                                if word[0] in keywords_general:
+                                    keywords_general.remove(word[0])
+                        elif word[1]>0.25 and word[1] < 0.4:
+                            if word[0] not in [item[0] for item in keywords_first]:
+                                if word[0] in [item[0] for item in keywords_second]:
+                                    added = [item for item in keywords_second if item[0] == word[0]]
+                                    if added[0][1] < word[1]:
+                                        keywords_second.remove(added[0])
+                                        keywords_second.append(word)
+                                        if word[0] in keywords_general:
+                                            keywords_general.remove(word[0])
+                                else:
+                                    keywords_second.append(word)
+                                    if word[0] in [it for it in keywords_general]:
+                                        keywords_general.remove(word[0])
+                        elif word[1] > 0.21:
+                            if word[0] not in [item[0] for item in keywords_first]:
+                                if word[0] not in [item[0] for item in keywords_second]:
+                                    if word[0] not in keywords_general:
+                                      keywords_general.append(word[0])
 
+    for k in keywords_first:
+        writer1.writerow([k[0], k[1]])
+    for i in keywords_second:
+        writer2.writerow([i[0], i[1]])
+    for j in keywords_general:
+        writer3.writerow([j])
+    print("Keyword Scritte")
 
-    # Lista delle 25.000 parole chiave migliori usate per descrivere i 5000 film
     keywords_first = sorted(keywords_first, key=lambda values: values[1], reverse=True)
     keywords_second = sorted(keywords_second, key=lambda values: values[1], reverse=True)
     seconds1 = time.time()
     keyword_1.close()
     keyword_2.close()
     keyword_3.close()
-    print("Seconds since epoch =", seconds1-seconds)
-    return keywords_first, keywords_second, keywords_general
-
+    '''

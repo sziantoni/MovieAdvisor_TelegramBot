@@ -15,24 +15,23 @@ language = 'United States'
 year = '2000'
 msg_id = 0
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
-#db = pd.read_csv(r"C:\Users\Stefano\Desktop\nuovo_db_18000.csv", sep=';', header=None)
-#keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 18857)
+
+#db = pd.read_csv(r"C:\Users\Stefano\Desktop\prova.csv", sep=';', header=None)
+#keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 5806)
+
 keywords_first, keyword_second, keyword_general = [],[],[]
 
-with open('kw1.csv', 'r') as kw_1:
+with open('keywordEdit.csv', 'r') as kw_1:
     csv_reader = csv.reader(kw_1, delimiter=';')
     for row in csv_reader:
-        keywords_first.append((row[0], row[1]))
+        value = row[1].replace(",", ".")
+        if float(value) > 0.38 and len(row[0])>4:
+            keywords_first.append((row[0], value))
+        elif 0.27 < float(value) < 0.38 and len(row[0])>4:
+            keyword_second.append((row[0], value))
+        elif 0.21 < float(value) < 0.27 and len(row[0]) > 4:
+            keyword_general.append(row[0])
 
-with open('kw2.csv', 'r') as kw_2:
-    csv_reader = csv.reader(kw_2, delimiter=';')
-    for row in csv_reader:
-        keyword_second.append((row[0], row[1]))
-
-with open('kw3.csv', 'r') as kw_3:
-    csv_reader = csv.reader(kw_3, delimiter=';')
-    for row in csv_reader:
-        keyword_general.append(row[0])
 
 print(str(len(keywords_first)))
 print(str(len(keyword_second)))
@@ -54,8 +53,8 @@ def on_chat_message(msg):
         for chunk in doc.noun_chunks:
             print(chunk.text)
         for token in doc:
-            if str(token.text) != str(token.lemma_):
-                msg['text'] = msg['text'] + ' ' + str(token.lemma_)
+            if str(token.text) != str(token.lemma_) and '-' not in str(token.lemma_):
+                msg['text'] = msg['text'] + ', ' + str(token.lemma_)
         final_query, kw_string = qG.queryConstructor(msg['text'], keywords_first, keyword_second, keyword_general,
                                                      language, year)
         if final_query != '':
@@ -77,8 +76,11 @@ def on_chat_message(msg):
                 links.append(result["link"]["value"])
             bot.sendMessage(chat_id, "I suggest you..\n\n")
             i = 0
+            added = []
             for x in titles:
-                bot.sendMessage(chat_id, titles[i].upper() + '\n\n' + abstracts[i] + '\n\n' + links[i])
+                if x not in added:
+                    bot.sendMessage(chat_id, titles[i].upper() + '\n\n' + abstracts[i] + '\n\n' + links[i])
+                    added.append(x)
                 i += 1
             bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=keyboard5)
         else:
