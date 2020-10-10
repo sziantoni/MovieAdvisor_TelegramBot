@@ -10,7 +10,7 @@ import csv
 
 stopwords = open("stopwords.txt").read().splitlines()
 whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 -')
-prohibited = ['film', 'movie', 'fims', 'movies']
+prohibited = ['film', 'movie', 'films', 'movies']
 nlp = spacy.load("en_core_web_sm")
 
 def keywordGenerator(db, db_len):
@@ -116,7 +116,14 @@ def keywordGenerator(db, db_len):
     keywords_general = []
     keywords_first = []
     keywords_second = []
+    keyword_1 = open('kw1.csv', 'w', newline='')
+    keyword_2 = open('kw2.csv', 'w', newline='')
+    keyword_3 = open('kw3.csv', 'w', newline='')
+    writer1 = csv.writer(keyword_1, delimiter=';')
+    writer2 = csv.writer(keyword_2, delimiter=';')
+    writer3 = csv.writer(keyword_3, delimiter=';')
     writer6 = csv.writer(keyword_6, delimiter=';')
+    keywords_first, keywords_second, keywords_general = [], [], []
 
     for u in uniqueWords:
         current = 0
@@ -124,95 +131,39 @@ def keywordGenerator(db, db_len):
         max = 0
         accumulator = 0
         count = 0
-        for i in range(0, len(TFIDF_Array) - 1):
-            words = TFIDF_Array[i][1]
-            if words != None:
-                for word in words:
-                    if word[0] == u:
-                        accumulator += word[1]
-                        count += 1
-                        current = word[1]
-                        if current < min or min == 0:
-                            min = current
-                        elif current > max:
-                            max = current
-        if min != 0 and max != 0 and count != 0 and accumulator != 0:
-            tot = accumulator / count
-            writer6.writerow([u,min,max,tot])
+        controller = False
+        for p in prohibited:
+            if p in u:
+                controller= True
+        if controller == False:
+            for i in range(0, len(TFIDF_Array) - 1):
+                words = TFIDF_Array[i][1]
+                if words != None:
+                    for word in words:
+                        if word[0] == u:
+                            accumulator += word[1]
+                            count += 1
+                            current = word[1]
+                            if current < min or min == 0:
+                                min = current
+                            if current > max:
+                                max = current
+            if min != 0 and max != 0 and count!= 0:
+                tot = accumulator / count
+                value = 0
+                if max == min == tot:
+                    value = (max)/1.5
+                else:
+                    value = (max + min + tot)/2
+                writer6.writerow([u,min,max,tot,value])
+                if value > 0.39 and len(u) > 3 :
+                    keywords_first.append((u, value))
+                if value > 0.27 and value < 0.39 and len(u) > 3:
+                    keywords_second.append((u, value))
+                if value > 0.23 and value < 0.27 and len(u) > 3:
+                    keywords_general.append(u)
 
     keyword_6.close()
-    keywords_first, keyword_second, keyword_general = [], [], []
-
-    with open('keywords.csv', 'r') as kw_1:
-        csv_reader = csv.reader(kw_1, delimiter=';')
-        for row in csv_reader:
-            value = row[1].replace(",", ".")
-            if float(value) > 0.38 and len(row[0]) > 4:
-                keywords_first.append((row[0], value))
-            elif 0.27 < float(value) < 0.38 and len(row[0]) > 4:
-                keyword_second.append((row[0], value))
-            elif 0.21 < float(value) < 0.27 and len(row[0]) > 4:
-                keyword_general.append(row[0])
-
-    print("Keyword Inserite")
-
-    return keywords_first, keywords_second, keywords_general
-
-
-
-
-
-
-    #keyword_1 = open('kw1.csv', 'w', newline='')
-    #keyword_2 = open('kw2.csv', 'w', newline='')
-    #keyword_3 = open('kw3.csv', 'w', newline='')
-    #writer1 = csv.writer(keyword_1, delimiter=';')
-    #writer2 = csv.writer(keyword_2, delimiter=';')
-    #writer3 = csv.writer(keyword_3, delimiter=';')
-
-    '''
-
-    for i in range(0, len(TFIDF_Array)-1):
-        words = TFIDF_Array[i][1]
-        if words != None:
-            for word in words:
-                    if len(word[0])>4:
-                        if word[1] > 0.4:
-                            if word[0] in [item[0] for item in keywords_first]:
-                                added = [item for item in keywords_first if item[0] == word[0]]
-                                if added[0][1] < word[1]:
-                                    keywords_first.remove(added[0])
-                                    keywords_first.append(word)
-                                    if word[0] in [item[0] for item in keywords_second]:
-                                        added = [item for item in keywords_second if item[0] == word[0]]
-                                        keywords_second.remove(added[0])
-                                    if word[0] in keywords_general:
-                                        keywords_general.remove(word[0])
-                            else:
-                                keywords_first.append(word)
-                                if word[0] in [item[0] for item in keywords_second]:
-                                    added = [item for item in keywords_second if item[0] == word[0]]
-                                    keywords_second.remove(added[0])
-                                if word[0] in keywords_general:
-                                    keywords_general.remove(word[0])
-                        elif word[1]>0.25 and word[1] < 0.4:
-                            if word[0] not in [item[0] for item in keywords_first]:
-                                if word[0] in [item[0] for item in keywords_second]:
-                                    added = [item for item in keywords_second if item[0] == word[0]]
-                                    if added[0][1] < word[1]:
-                                        keywords_second.remove(added[0])
-                                        keywords_second.append(word)
-                                        if word[0] in keywords_general:
-                                            keywords_general.remove(word[0])
-                                else:
-                                    keywords_second.append(word)
-                                    if word[0] in [it for it in keywords_general]:
-                                        keywords_general.remove(word[0])
-                        elif word[1] > 0.21:
-                            if word[0] not in [item[0] for item in keywords_first]:
-                                if word[0] not in [item[0] for item in keywords_second]:
-                                    if word[0] not in keywords_general:
-                                      keywords_general.append(word[0])
 
     for k in keywords_first:
         writer1.writerow([k[0], k[1]])
@@ -221,11 +172,12 @@ def keywordGenerator(db, db_len):
     for j in keywords_general:
         writer3.writerow([j])
     print("Keyword Scritte")
-
-    keywords_first = sorted(keywords_first, key=lambda values: values[1], reverse=True)
-    keywords_second = sorted(keywords_second, key=lambda values: values[1], reverse=True)
-    seconds1 = time.time()
     keyword_1.close()
     keyword_2.close()
     keyword_3.close()
-    '''
+    print("Keyword Inserite")
+
+    return keywords_first, keywords_second, keywords_general
+
+
+

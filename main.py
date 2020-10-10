@@ -21,17 +21,21 @@ s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="G
 
 keywords_first, keyword_second, keyword_general = [],[],[]
 
-with open('keywordEdit.csv', 'r') as kw_1:
+with open('kw1.csv', 'r') as kw_1:
     csv_reader = csv.reader(kw_1, delimiter=';')
     for row in csv_reader:
-        value = row[1].replace(",", ".")
-        if float(value) > 0.38 and len(row[0])>4:
-            keywords_first.append((row[0], value))
-        elif 0.27 < float(value) < 0.38 and len(row[0])>4:
-            keyword_second.append((row[0], value))
-        elif 0.21 < float(value) < 0.27 and len(row[0]) > 4:
-            keyword_general.append(row[0])
+        keywords_first.append((row[0], row[1]))
 
+with open('kw2.csv', 'r') as kw_2:
+    csv_reader = csv.reader(kw_2, delimiter=';')
+    for row in csv_reader:
+        keyword_second.append((row[0], row[1]))
+
+
+with open('kw3.csv', 'r') as kw_3:
+    csv_reader = csv.reader(kw_3, delimiter=';')
+    for row in csv_reader:
+        keyword_general.append((row[0]))
 
 print(str(len(keywords_first)))
 print(str(len(keyword_second)))
