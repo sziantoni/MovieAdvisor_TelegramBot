@@ -113,9 +113,6 @@ def keywordGenerator(db, db_len):
     TFIDF_Matrix_Computation(TFMatrix, Idf)
     print('TFIDF fatto!')
     del TFMatrix, Idf
-    keywords_general = []
-    keywords_first = []
-    keywords_second = []
     keyword_1 = open('kw1.csv', 'w', newline='')
     keyword_2 = open('kw2.csv', 'w', newline='')
     keyword_3 = open('kw3.csv', 'w', newline='')
@@ -132,6 +129,7 @@ def keywordGenerator(db, db_len):
         accumulator = 0
         count = 0
         controller = False
+        adv_bool = False
         for p in prohibited:
             if p in u:
                 controller= True
@@ -156,12 +154,17 @@ def keywordGenerator(db, db_len):
                 else:
                     value = (max + min + tot)/2
                 writer6.writerow([u,min,max,tot,value])
-                if value > 0.39 and len(u) > 3 :
-                    keywords_first.append((u, value))
-                if value > 0.27 and value < 0.39 and len(u) > 3:
-                    keywords_second.append((u, value))
-                if value > 0.23 and value < 0.27 and len(u) > 3:
-                    keywords_general.append(u)
+                doc = nlp(u)
+                for token in doc:
+                    if str(token.pos_) == 'ADV' or str(token.pos_) == 'ADP':
+                        adv_bool = True
+                if adv_bool is False:
+                    if value > 0.37 and len(u) > 3 :
+                        keywords_first.append((u, value))
+                    if value > 0.27 and value < 0.37 and len(u) > 3:
+                        keywords_second.append((u, value))
+                    if value > 0.24 and value < 0.27 and len(u) > 3:
+                        keywords_general.append((u, value))
 
     keyword_6.close()
 
@@ -170,7 +173,7 @@ def keywordGenerator(db, db_len):
     for i in keywords_second:
         writer2.writerow([i[0], i[1]])
     for j in keywords_general:
-        writer3.writerow([j])
+        writer3.writerow([j[0], j[1]])
     print("Keyword Scritte")
     keyword_1.close()
     keyword_2.close()

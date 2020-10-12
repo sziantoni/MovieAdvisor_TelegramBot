@@ -7,16 +7,18 @@ nlp = spacy.load("en_core_web_sm")
 movies_genres = ['crime', 'action', 'adventure', 'comedy', 'drama', 'fantasy', 'historical', 'horror', 'mystery',
                  'romantic', 'saga', 'satirical', 'thriller', 'scientific', 'urban', 'western', 'country',
                  'sci-fi', 'science fiction', 'cartoon', 'superhero', 'animated', 'investigative', 'space',
-                 'documentary', 'sport', 'war']
+                 'documentary', 'sport', 'war', 'race', 'car']
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
 
 
 def queryConstructor(msg, keywords_first, keyword_second, keyword_general, language, year):
+    too_much = False
     doc = nlp(msg)
     genre = ''
     kw_f = []
     kw_f_words = []
     kw_s_words = []
+    kw_g_words = []
     kw_s = []
     kw_g = []
     kw = []
@@ -28,7 +30,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
     w = w.lower().split(' ')
     genres = []
     c_gnr = 0
-    for k in range(0, len(w)-1):
+    for k in range(0, len(w) - 1):
         if len(w[k]) > 6:
             plural = plur.pluralize(w[k])
             if p not in w:
@@ -59,16 +61,47 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                 kw_s_words.append(word)
                 kw.append(word)
                 kw_string = kw_string + '2) ' + str(word) + str(keyword_second[i][1]) + ' | '
-    for word in w:
-        if word in keyword_general:
-            if len(word) > 2:
-                if word not in kw_s_words and word not in kw_g:
-                    kw_g.append(word)
-                    kw.append(word)
-                    kw_string = kw_string + '3) ' + str(word) + ' | '
+
+    for i in range(0, len(keyword_general) - 1):
+        for word in w:
+            if word == keyword_general[i][0] and len(
+                    word) > 2 and word not in kw_s_words and word not in kw_f_words and word not in kw_g_words:
+                kw_g_words.append(word)
+                kw_g.append(keyword_general[i])
+                kw.append(word)
+                kw_string = kw_string + '3) ' + str(word) + str(keyword_general[i][1]) + ' | '
 
     kw_f.sort(key=lambda tup: tup[1], reverse=True)
-    if len(kw) > 0:
+    kw_s.sort(key=lambda tup: tup[1], reverse=True)
+    kw_g.sort(key=lambda tup: tup[1], reverse=True)
+
+    if len(kw) > 8:
+        too_much = True
+        print('original: ' + str(len(kw)))
+        print([k for k in kw])
+        kw_check = kw_f + kw_s + kw_g
+        kw_check = kw_check[:8]
+        k1 = []
+        k2 = []
+        k3 = []
+        for k in kw_check:
+            if k in kw_f:
+                k1.append(k)
+            elif k in kw_s:
+                k2.append(k)
+            elif k in kw_g:
+                k3.append(k)
+        kw_f = k1
+        kw_s = k2
+        kw_g = k3
+        kw = kw[:8]
+        kw_f_words = kw_f_words[:len(kw_f)]
+        kw_s_words = kw_s_words[:len(kw_s)]
+        kw_g_words = kw_g_words[:len(kw_g)]
+        print('reduced: ' + str(len(kw)))
+        print([k for k in kw])
+
+    if len(kw) > 1:
         nounArray = []
         print('CHUNKER:\n')
         for chunk in doc.noun_chunks:
@@ -87,7 +120,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                                 if text not in nounArray:
                                     nounArray.append(text)
                                     print(text)
-        if genre == '' and len(kw_f) > 0:
+        if genre == '' and len(kw_f) > 2:
             genre = '(?=.*' + kw_f[0][0] + '?)'
         elif genre == '':
             genre = 'film'
@@ -124,7 +157,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             support = str(noun).replace(" ", "_")
             support = support.replace("-", "_")
             nouner = ' BIND((IF (REGEX(xsd:string(?abstract), "' + str(
-                noun) + '"), 12 , -5)) AS ?' + support + 's). '
+                noun) + '"), 15 , -5)) AS ?' + support + 's). '
             scorer = scorer + '?' + support + 's + '
             query_second_part = query_second_part + nouner
         d_kw_f = dict(kw_f)
@@ -145,12 +178,15 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                     else:
                         weight = '8'
                 elif k in kw_s_words:
-                    if len(kw_f) == 0 and len(kw_s) < 3:
-                        weight = '8'
-                    elif len(kw_f) == 0 and len(kw_s) > 2:
-                        weight = '6'
+                    if len(kw_f) < 3:
+                        weight = '7'
+                        penalties = '0'
+                    elif len(kw_f) < 2:
+                        weight = '9'
+                        penalties = '-4'
                     else:
-                        weight = '3'
+                        weight = '5'
+                        penalties = '0'
                 else:
                     weight = '2'
                 if len(k) > 2 and k != 'film' and k != 'movie':
@@ -190,7 +226,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
         query_second_part = query_first_part + query_second_part
 
         if scorer != ' ':
-            if scorer[len(scorer)-2] == '+':
+            if scorer[len(scorer) - 2] == '+':
                 scorer = scorer[:-2] + ' '
             query_second_part = query_second_part + '  BIND(( ' + scorer + ') as ?score1).  }} '
         else:
@@ -210,17 +246,18 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
         for x in kw_f:
             penalties = '0'
             if float(x[1]) > 0.55:
-                weight = '20'
+                weight = '30'
                 penalties = '-20'
             elif float(x[1]) > 0.50:
-                weight = '15'
+                weight = '25'
                 penalties = '-10'
             elif float(x[1]) > 0.45:
-                weight = '12'
+                weight = '18'
                 penalties = '-8'
             else:
-                weight = '7'
-            binder = ' BIND((IF  (regex(lcase(xsd:string(?list)), "^(?=.* ' + x[0] + ' ).*$"),  ' + weight + ' , ' + penalties + ')) AS ?special' + str(
+                weight = '8'
+            binder = ' BIND((IF  (regex(lcase(xsd:string(?list)), "^(?=.* ' + x[
+                0] + ' ).*$"),  ' + weight + ' , ' + penalties + ')) AS ?special' + str(
                 s1) + ' ).  '
             query_second_part = query_second_part + binder
             if count == (len(kw_f_words) - 1):
@@ -250,15 +287,16 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                 for x in kw_s:
                     penalties = '0'
                     if float(x[1]) > 0.35:
-                        weight = '20'
+                        weight = '30'
                         penalties = '-20'
                     elif float(x[1]) > 0.30:
-                        weight = '15'
+                        weight = '25'
                         penalties = '-10'
                     else:
                         weight = '8'
 
-                    binder = ' BIND((IF  (regex(lcase(xsd:string(?list)), "^(?=.* ' + x[0] + ' ).*$"),  ' + weight + ' , ' + penalties + ')) AS ?special' + str(
+                    binder = ' BIND((IF  (regex(lcase(xsd:string(?list)), "^(?=.* ' + x[
+                        0] + ' ).*$"),  ' + weight + ' , ' + penalties + ')) AS ?special' + str(
                         s1) + ' ).  '
                     query_second_part = query_second_part + binder
                     if count == (len(kw_s_words) - 1):
@@ -268,7 +306,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                     s1 += 1
                     count += 1
 
-        binder = ' BIND((IF  (regex(xsd:string(?list), "(' + genre + ')"),  10 , 0)) AS ?genres ).  '
+        binder = ' BIND((IF  (regex(xsd:string(?list), "(' + genre + ')"),  20 , -5)) AS ?genres ).  '
         checker = ' BIND((IF  (regex(xsd:string(?list), "short film"),  -100 , 0)) AS ?optional1 ).  '
         checker1 = ' BIND((IF  (regex(xsd:string(?list), "short movie"),  -100 , 0)) AS ?optional2 ).  '
         checker2 = ' BIND((IF  (regex(xsd:string(?abstract), "short film"),  -100 , 0)) AS ?optional3 ).  '
@@ -283,4 +321,4 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) limit 5 '
     else:
         final_query = ''
-    return final_query, kw_string
+    return final_query, kw_string, too_much
