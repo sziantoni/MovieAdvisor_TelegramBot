@@ -19,8 +19,8 @@ msg_id = 0
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
 keyboards = ['Settings', 'Start', 'Nationality', 'Year', 'United States', 'Italy', 'France', 'England', 'Back', '1900',
              '1920', '1950', '1980', '1990', '2000', '2010', 'Continue']
-# db = pd.read_csv(r"C:\Users\Stefano\Desktop\prova3-6515.csv", sep=';', header=None)
-# keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 6515)
+#db = pd.read_csv(r"C:\Users\Stefano\Desktop\prova3-6515.csv", sep=';', header=None)
+#keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 6515)
 
 keywords_first, keyword_second, keyword_general = [], [], []
 
@@ -80,24 +80,35 @@ def on_chat_message(msg):
                 titles = []
                 abstracts = []
                 links = []
+                result_checker = False
+                previous_value = 0
+                count = 0
                 for result in ret["results"]["bindings"]:
-                    titles.append(result["movie_title"]["value"])
-                    abstracts.append(
-                        (result["abstract"]["value"][:300] + '....') if len(result["abstract"]["value"]) > 300 else
-                        result["abstract"]["value"])
-                    links.append(result["link"]["value"])
-                bot.sendMessage(chat_id, "I suggest you..\n\n")
-                i = 0
-                added = []
-                for x in titles:
-                    if x not in added:
-                        bot.sendMessage(chat_id, titles[i].upper() + '\n\n' + abstracts[i] + '\n\n' + links[i])
-                        added.append(x)
-                    i += 1
-                if too_much is True:
-                    bot.sendMessage(chat_id,
-                                    "WARNING! You have written too much text, the search excluded less significant keywords ")
-                bot.sendMessage(chat_id, "Write again if you want to search another films")
+                    if int(result['score']['value']) > previous_value - 15 or count == 0 or int(result['score']['value']) > 4:
+                        titles.append(result["movie_title"]["value"])
+                        abstracts.append(
+                            (result["abstract"]["value"][:300] + '....') if len(result["abstract"]["value"]) > 300 else
+                            result["abstract"]["value"])
+                        links.append(result["link"]["value"])
+                        result_checker = True
+                        previous_value = int(result['score']['value'])
+                        count += 1
+                if result_checker is True:
+                    bot.sendMessage(chat_id, "I suggest you..\n\n")
+                    i = 0
+                    added = []
+                    for x in titles:
+                        if x not in added:
+                            bot.sendMessage(chat_id, titles[i].upper() + '\n\n' + abstracts[i] + '\n\n' + links[i])
+                            added.append(x)
+                        i += 1
+                    if too_much is True:
+                        bot.sendMessage(chat_id,
+                                        "WARNING! You have written too much text, the search excluded less significant keywords ")
+                    bot.sendMessage(chat_id, "Write again if you want to search another films")
+                else:
+                    bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message",
+                                    reply_markup=k6)
             else:
                 bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message", reply_markup=k6)
 

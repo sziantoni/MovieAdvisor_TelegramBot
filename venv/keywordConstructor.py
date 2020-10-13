@@ -156,7 +156,7 @@ def keywordGenerator(db, db_len):
                 writer6.writerow([u,min,max,tot,value])
                 doc = nlp(u)
                 for token in doc:
-                    if str(token.pos_) == 'ADV' or str(token.pos_) == 'ADP':
+                    if str(token.pos_) == 'ADV' or str(token.pos_) == 'ADP' or str(token.pos_) == 'AUX':
                         adv_bool = True
                 if adv_bool is False:
                     if value > 0.37 and len(u) > 3 :

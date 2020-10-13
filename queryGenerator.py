@@ -101,7 +101,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
         print('reduced: ' + str(len(kw)))
         print([k for k in kw])
 
-    if len(kw) > 1:
+    if len(kw) > 1 or len(kw_f)>0:
         nounArray = []
         print('CHUNKER:\n')
         for chunk in doc.noun_chunks:
@@ -247,13 +247,13 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             penalties = '0'
             if float(x[1]) > 0.55:
                 weight = '30'
-                penalties = '-20'
+                #penalties = '-20'
             elif float(x[1]) > 0.50:
                 weight = '25'
-                penalties = '-10'
+                #penalties = '-10'
             elif float(x[1]) > 0.45:
                 weight = '18'
-                penalties = '-8'
+                #penalties = '-8'
             else:
                 weight = '8'
             binder = ' BIND((IF  (regex(lcase(xsd:string(?list)), "^(?=.* ' + x[
@@ -288,10 +288,10 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                     penalties = '0'
                     if float(x[1]) > 0.35:
                         weight = '30'
-                        penalties = '-20'
+                        #penalties = '-20'
                     elif float(x[1]) > 0.30:
                         weight = '25'
-                        penalties = '-10'
+                        #penalties = '-10'
                     else:
                         weight = '8'
 
@@ -318,7 +318,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             if final_score[len(final_score) - 2] == '+':
                 final_score = final_score[:-2] + ' '
             final_score = ' ?genres + ?optional1 + ?optional2 + ?optional3 + ?optional4 + ' + final_score
-            final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) limit 5 '
+            final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
     else:
         final_query = ''
     return final_query, kw_string, too_much
