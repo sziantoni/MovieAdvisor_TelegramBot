@@ -1,13 +1,12 @@
+import csv
+
 import spacy
 import telepot
 import pattern.text.en as plur
 
 punctuation = set("!@#$-%^'&*()_+<>?:.,;")
 nlp = spacy.load("en_core_web_sm")
-movies_genres = ['crime', 'action', 'adventure', 'comedy', 'drama', 'fantasy', 'historical', 'horror', 'mystery',
-                 'romantic', 'saga', 'satirical', 'thriller', 'scientific', 'urban', 'western', 'country',
-                 'sci-fi', 'science fiction', 'cartoon', 'superhero', 'animated', 'investigative', 'space',
-                 'documentary', 'sport', 'war', 'race', 'car']
+movies_genres = []
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
 
 
@@ -24,11 +23,18 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
     kw = []
     kw_string = ''
     w = msg
+    with open('genres.csv', 'r') as kw_3:
+        csv_reader = csv.reader(kw_3, delimiter=';')
+        for row in csv_reader:
+            word = row[0].replace(" ", "")
+            movies_genres.append(word)
+    movies_genres.append('western')
     for p in punctuation:
         if p in w:
             w = w.replace(p, "")
     w = w.lower().split(' ')
     genres = []
+    selected_gnr = []
     c_gnr = 0
     for k in range(0, len(w) - 1):
         if len(w[k]) > 6:
@@ -36,10 +42,13 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             if p not in w:
                 w.append(plural)
         if w[k] in movies_genres:
-            gnr = '(?=.*' + w[k] + ')'
-            if gnr not in genres and c_gnr < 2:
-                c_gnr += 1
+            if w[k] == 'race':
+                w[k] = w[k] + 'r'
+            gnr = ' BIND((IF (REGEX(lcase(xsd:string(?abstract)), "^(?=.*' + w[k] + ').*$"), 10 , -10)) AS ?genre' + str(c_gnr) + '). '
+            if w[k] not in selected_gnr:
                 genres.append(gnr)
+                selected_gnr.append(w[k])
+                c_gnr += 1
     for h in range(0, len(genres)):
         if h == len(genres) - 1:
             genre = genre + genres[h]
@@ -101,7 +110,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
         print('reduced: ' + str(len(kw)))
         print([k for k in kw])
 
-    if len(kw) > 1 or len(kw_f)>0:
+    if len(kw) > 1 or len(kw_f) > 0:
         nounArray = []
         print('CHUNKER:\n')
         for chunk in doc.noun_chunks:
@@ -120,10 +129,11 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                                 if text not in nounArray:
                                     nounArray.append(text)
                                     print(text)
-        if genre == '' and len(kw_f) > 2:
-            genre = '(?=.*' + kw_f[0][0] + '?)'
-        elif genre == '':
-            genre = 'film'
+        if genre == '':
+            genre = ' BIND((IF (REGEX(lcase(xsd:string(?abstract)), "^(?=.*film).*$"), 10 , -10)) '
+        scorer = ''
+        for g in range(0, len(genres)):
+            scorer = scorer + '?genre' + str(g) + ' + '
         query_first_part = ' PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> ' \
                            ' PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
                            ' PREFIX dct:<http://purl.org/dc/terms/> ' \
@@ -142,16 +152,15 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             language) + '").' \
                         ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
                         ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
-                        ' FILTER REGEX(lcase(xsd:string(?abstract)), "(' + genre + ')"). ' \
-                                                                                   ' ?movie  dct:subject ?subject. ' \
-                                                                                   ' ?subject rdfs:label ?year. ' \
-                                                                                   ' filter regex(?year, "\\\\d{4}.films"). ' \
-                                                                                   ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                                                                                   ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
-                                                                                                                                                                              ' ?movie dct:subject ?subject1. ' \
-                                                                                                                                                                              ' ?subject1 rdfs:label ?subj1 '
+                           + genre + \
+                           ' ?movie  dct:subject ?subject. ' \
+                           ' ?subject rdfs:label ?year. ' \
+                           ' filter regex(?year, "\\\\d{4}.films"). ' \
+                           ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
+                           ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
+                                                                                                                      ' ?movie dct:subject ?subject1. ' \
+                                                                                                                      ' ?subject1 rdfs:label ?subj1 '
         query_second_part = ''
-        scorer = ''
         count = 0
         for noun in nounArray:
             support = str(noun).replace(" ", "_")
@@ -247,13 +256,13 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
             penalties = '0'
             if float(x[1]) > 0.55:
                 weight = '30'
-                #penalties = '-20'
+                # penalties = '-20'
             elif float(x[1]) > 0.50:
                 weight = '25'
-                #penalties = '-10'
+                # penalties = '-10'
             elif float(x[1]) > 0.45:
                 weight = '18'
-                #penalties = '-8'
+                # penalties = '-8'
             else:
                 weight = '8'
             binder = ' BIND((IF  (regex(lcase(xsd:string(?list)), "^(?=.* ' + x[
@@ -288,10 +297,10 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                     penalties = '0'
                     if float(x[1]) > 0.35:
                         weight = '30'
-                        #penalties = '-20'
+                        # penalties = '-20'
                     elif float(x[1]) > 0.30:
                         weight = '25'
-                        #penalties = '-10'
+                        # penalties = '-10'
                     else:
                         weight = '8'
 
@@ -306,18 +315,18 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                     s1 += 1
                     count += 1
 
-        binder = ' BIND((IF  (regex(xsd:string(?list), "(' + genre + ')"),  20 , -5)) AS ?genres ).  '
+
         checker = ' BIND((IF  (regex(xsd:string(?list), "short film"),  -100 , 0)) AS ?optional1 ).  '
         checker1 = ' BIND((IF  (regex(xsd:string(?list), "short movie"),  -100 , 0)) AS ?optional2 ).  '
         checker2 = ' BIND((IF  (regex(xsd:string(?abstract), "short film"),  -100 , 0)) AS ?optional3 ).  '
         checker3 = ' BIND((IF  (regex(xsd:string(?abstract), "short movie"),  -100 , 0)) AS ?optional4 ).  '
-        query_second_part = query_second_part + binder + checker + checker1 + checker2 + checker3
+        query_second_part = query_second_part + checker + checker1 + checker2 + checker3
         if final_score == '':
-            final_query = query_second_part + ' BIND((?genres +?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
+            final_query = query_second_part + ' BIND((?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
         else:
             if final_score[len(final_score) - 2] == '+':
                 final_score = final_score[:-2] + ' '
-            final_score = ' ?genres + ?optional1 + ?optional2 + ?optional3 + ?optional4 + ' + final_score
+            final_score = ' ?optional1 + ?optional2 + ?optional3 + ?optional4 + ' + final_score
             final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
     else:
         final_query = ''

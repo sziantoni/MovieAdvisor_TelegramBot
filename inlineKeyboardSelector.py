@@ -53,10 +53,4 @@ def selectKeyboard(chat_id, text, lang, y):
     elif text == '2000':
         year = '2000'
         bot.sendMessage(chat_id, "Year changed", reply_markup=k4)
-    elif text == '2005':
-        year = '2005'
-        bot.sendMessage(chat_id, "Year changed", reply_markup=k4)
-    elif text == '2010':
-        year = '2010'
-        bot.sendMessage(chat_id, "Year changed", reply_markup=k4)
     return language, year

@@ -24,8 +24,6 @@ k5 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="1900", callback_d
                                     InlineKeyboardButton(text="1980", callback_data='1980'),
                                     InlineKeyboardButton(text="1990", callback_data='1990'),
                                     InlineKeyboardButton(text="2000", callback_data='2000'),
-                                    InlineKeyboardButton(text="2005", callback_data='2005'),
-                                    InlineKeyboardButton(text="2010", callback_data='2010'),
                                     InlineKeyboardButton(text="Back", callback_data='back')]], one_time_keyboard=True,
                          resize_keyboard=True)
 
