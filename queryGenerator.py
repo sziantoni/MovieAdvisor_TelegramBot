@@ -44,7 +44,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
         if w[k] in movies_genres:
             if w[k] == 'race':
                 w[k] = w[k] + 'r'
-            gnr = ' BIND((IF (REGEX(lcase(xsd:string(?abstract)), "^(?=.*' + w[k] + ').*$"), 10 , -10)) AS ?genre' + str(c_gnr) + '). '
+            gnr = ' BIND((IF (REGEX(lcase(xsd:string(?abstract)), "^(?=.*' + w[k] + ').*$"), 20 , -20)) AS ?genre' + str(c_gnr) + '). '
             if w[k] not in selected_gnr:
                 genres.append(gnr)
                 selected_gnr.append(w[k])
@@ -130,7 +130,8 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                                     nounArray.append(text)
                                     print(text)
         if genre == '':
-            genre = ' BIND((IF (REGEX(lcase(xsd:string(?abstract)), "^(?=.*film).*$"), 10 , -10)) '
+            genre = ' BIND((IF (REGEX(lcase(xsd:string(?abstract)), "^(?=.*film).*$"), 20 , -20)) as ?genre0). '
+            genres.append('film')
         scorer = ''
         for g in range(0, len(genres)):
             scorer = scorer + '?genre' + str(g) + ' + '
@@ -139,7 +140,7 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                            ' PREFIX dct:<http://purl.org/dc/terms/> ' \
                            ' PREFIX dbo:<http://dbpedia.org/ontology/> ' \
                            ' PREFIX dbpprop:<http://dbpedia.org/property/> ' \
-                           ' PREFIX dbc:<http://dbpedia.org/resource/Category:> ' \
+                           ' PREFIX dbc:<http://dbpedia.org/resource/Category/movie:> ' \
                            ' SELECT DISTINCT ?score  ?id ?movie ?movie_title ?year1 ?abstract ?link ?list  WHERE{ ' \
                            ' { SELECT DISTINCT ?score1  ?id ?movie ?movie_title ?year1 ?abstract ?link (group_concat(distinct ?subj1; separator = " ") as ?list) ' \
                            ' FROM <http://dbpedia.org>  WHERE{ ' \
@@ -147,7 +148,6 @@ def queryConstructor(msg, keywords_first, keyword_second, keyword_general, langu
                            ' ?movie rdf:type dbo:Film. ' \
                            ' ?movie rdfs:label ?movie_title ' \
                            ' FILTER langMatches(lang(?movie_title), "EN"). ' \
-                           ' FILTER REGEX(?movie_title, "[Ff]ilm"). ' \
                            ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(
             language) + '").' \
                         ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
