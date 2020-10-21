@@ -5,8 +5,6 @@ from telepot.loop import MessageLoop
 import sparql
 from SPARQLWrapper import SPARQLWrapper, JSON
 import spacy
-from telepot.namedtuple import ReplyKeyboardRemove
-
 import queryGenerator as qG
 from keyboards import k1, k6
 import inlineKeyboardSelector
@@ -17,33 +15,20 @@ language = 'United States'
 year = '2000'
 msg_id = 0
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
+sparql = SPARQLWrapper(endpoint='http://dbpedia.org/sparql')
 keyboards = ['Settings', 'Start', 'Nationality', 'Year', 'United States', 'Italy', 'France', 'England', 'Back', '1900',
              '1920', '1950', '1980', '1990', '2000', '2010', 'Continue']
-#db = pd.read_csv(r"C:\Users\Stefano\Desktop\prova3-6515.csv", sep=';', header=None)
-#keywords_first, keyword_second, keyword_general = kc.keywordGenerator(db, 6515)
+#db = pd.read_csv(r"C:\Users\Stefano\Desktop\wikidata10000.csv", sep=';', header=None)
 
-keywords_first, keyword_second, keyword_general = [], [], []
-
+idf = []
 with open('kw1.csv', 'r') as kw_1:
     csv_reader = csv.reader(kw_1, delimiter=';')
     for row in csv_reader:
-        keywords_first.append((row[0], row[1]))
-
-with open('kw2.csv', 'r') as kw_2:
-    csv_reader = csv.reader(kw_2, delimiter=';')
-    for row in csv_reader:
-        keyword_second.append((row[0], row[1]))
-
-with open('kw3.csv', 'r') as kw_3:
-    csv_reader = csv.reader(kw_3, delimiter=';')
-    for row in csv_reader:
-        keyword_general.append((row[0], row[1]))
-
-print(str(len(keywords_first)))
-print(str(len(keyword_second)))
-print(str(len(keyword_general)))
+        idf.append((row[0], row[1]))
+'''
+idf = kc.keywordGenerator(db, 10000)
+'''
 nlp = spacy.load("en_core_web_sm")
-sparql = SPARQLWrapper('http://dbpedia.org/sparql')
 sparql.setTimeout(50000)
 
 
@@ -66,14 +51,10 @@ def on_chat_message(msg):
                     msg['text'] = msg['text'] + ', ' + str(token.lemma_)
 
             too_much = False
-            final_query, kw_string, too_much = qG.queryConstructor(msg['text'], keywords_first, keyword_second,
-                                                                   keyword_general,
-                                                                   language, year)
+            final_query, too_much = qG.queryConstructor(msg['text'], idf, language, year)
             if final_query != '':
                 bot.sendMessage(chat_id, "OK give me a few seconds to look for some movies to recommend..\n")
                 print(final_query)
-                print('\nKEYWORDS: ' + kw_string)
-                print('---------------')
                 sparql.setQuery(final_query)
                 sparql.setReturnFormat(JSON)
                 ret = sparql.query().convert()
@@ -84,7 +65,7 @@ def on_chat_message(msg):
                 previous_value = 0
                 count = 0
                 for result in ret["results"]["bindings"]:
-                    if int(result['score']['value']) > previous_value - 10 or (count == 0 and int(result['score']['value']) > 10) or int(result['score']['value']) > 30:
+                    if int(result['score']['value']) > previous_value - 10 or (count == 0 and int(result['score']['value']) > 10) or int(result['score']['value']) > 20:
                         titles.append(result["movie_title"]["value"])
                         abstracts.append(
                             (result["abstract"]["value"][:300] + '....') if len(result["abstract"]["value"]) > 300 else
