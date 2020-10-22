@@ -18,6 +18,9 @@ def queryConstructor(msg, Idf, language, year):
     too_much = False
     doc = nlp(msg)
     genre = ''
+    for p in punctuation:
+        if p in msg:
+            msg = msg.replace(p, "")
     w = msg.lower().split(' ')
     tfidf = {}
     TF = []
@@ -36,9 +39,6 @@ def queryConstructor(msg, Idf, language, year):
             word = row[0].replace(" ", "")
             movies_genres.append(word)
     movies_genres.append('western')
-    for p in punctuation:
-        if p in w:
-            w = w.replace(p, "")
     misspelled = spell.unknown(w)
     for m in misspelled:
         w.remove(m)
@@ -116,15 +116,15 @@ def queryConstructor(msg, Idf, language, year):
                            ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
                                                                                                                       ' ?movie dct:subject ?subject1. ' \
                                                                                                                       ' ?subject1 rdfs:label ?subj1 '
+        keywords_support = []
+        for k in keywords:
+            if k[1] >= 0.1 and k[0] != 'american' and k[0] != 'americans':
+                keywords_support.append(k)
 
-        selection = len(keywords) / 3
-        if selection < 10:
-            keywords_support = keywords[:int(selection)]
-            keywords = keywords_support
-        else:
-            keywords_support = keywords[:10]
-            keywords = keywords_support
-
+        keywords = keywords_support
+        keywords.sort(key=lambda tup: tup[1], reverse=True)
+        if len(keywords) > 8:
+            keywords = keywords[:8]
         nounArray = []
         print('CHUNKER:\n')
         for chunk in doc.noun_chunks:

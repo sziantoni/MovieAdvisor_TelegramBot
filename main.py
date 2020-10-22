@@ -18,16 +18,15 @@ s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="G
 sparql = SPARQLWrapper(endpoint='http://dbpedia.org/sparql')
 keyboards = ['Settings', 'Start', 'Nationality', 'Year', 'United States', 'Italy', 'France', 'England', 'Back', '1900',
              '1920', '1950', '1980', '1990', '2000', '2010', 'Continue']
-#db = pd.read_csv(r"C:\Users\Stefano\Desktop\wikidata10000.csv", sep=';', header=None)
+#db = pd.read_csv(r"C:\Users\Stefano\Desktop\wikidata15000.csv", sep=';', header=None)
+#idf = kc.keywordGenerator(db, 15000)
 
 idf = []
 with open('kw1.csv', 'r') as kw_1:
     csv_reader = csv.reader(kw_1, delimiter=';')
     for row in csv_reader:
         idf.append((row[0], row[1]))
-'''
-idf = kc.keywordGenerator(db, 10000)
-'''
+
 nlp = spacy.load("en_core_web_sm")
 sparql.setTimeout(50000)
 
@@ -65,7 +64,7 @@ def on_chat_message(msg):
                 previous_value = 0
                 count = 0
                 for result in ret["results"]["bindings"]:
-                    if int(result['score']['value']) > previous_value - 10 or (count == 0 and int(result['score']['value']) > 10) or int(result['score']['value']) > 20:
+                    if int(result['score']['value']) > previous_value - 25 or (count == 0 and int(result['score']['value']) > 10) :
                         titles.append(result["movie_title"]["value"])
                         abstracts.append(
                             (result["abstract"]["value"][:300] + '....') if len(result["abstract"]["value"]) > 300 else

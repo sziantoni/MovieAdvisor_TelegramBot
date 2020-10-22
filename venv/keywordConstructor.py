@@ -15,7 +15,7 @@ nlp = spacy.load("en_core_web_sm")
 
 
 # IDF
-def IDFcomputation():
+def IDFcomputation(titles,uniqueWords, dictionary):
     import math
     NDocs = len(titles)
     idfDict = dict.fromkeys(uniqueWords, 0)
@@ -74,7 +74,7 @@ def keywordGenerator(db, db_len):
             dictionary[y,:]= [*numOfWords.values()]
         y += 1
 
-    Idf = IDFcomputation()
+    Idf = IDFcomputation(titles, uniqueWords, dictionary)
     keyword_1 = open('kw1.csv', 'w', newline='')
     writer1 = csv.writer(keyword_1, delimiter=';')
     for j, v in Idf.items():
