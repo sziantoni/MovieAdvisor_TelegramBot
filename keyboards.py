@@ -30,3 +30,6 @@ k5 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="1900", callback_d
 k6 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Settings", callback_data='setting'),
                                     InlineKeyboardButton(text="Continue", callback_data='back')]],
                          one_time_keyboard=True, resize_keyboard=True)
+
+k7 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Give me other results", callback_data='another_one')]],
+                         one_time_keyboard=True, resize_keyboard=True)

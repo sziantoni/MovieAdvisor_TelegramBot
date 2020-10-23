@@ -14,7 +14,7 @@ movies_genres = []
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
 
 
-def queryConstructor(msg, Idf, language, year):
+def queryConstructor(msg, Idf, language, year, no_genre, limit):
     too_much = False
     doc = nlp(msg)
     genre = ''
@@ -68,14 +68,14 @@ def queryConstructor(msg, Idf, language, year):
     for k in range(0, len(w) - 1):
         if len(w[k]) > 6:
             plural = plur.pluralize(w[k])
-            if p not in w:
+            if plural not in w:
                 w.append(plural)
         if w[k] in movies_genres:
             if w[k] == 'race':
                 w[k] = w[k] + 'r'
             gnr = ' BIND((IF (REGEX(lcase(xsd:string(?abstract)), "^(?=.*' + w[
                 k] + ').*$"), 20 , -20)) AS ?genre' + str(c_gnr) + '). '
-            if w[k] not in selected_gnr:
+            if w[k] not in selected_gnr :
                 genres.append(gnr)
                 selected_gnr.append(w[k])
                 c_gnr += 1
@@ -123,8 +123,10 @@ def queryConstructor(msg, Idf, language, year):
 
         keywords = keywords_support
         keywords.sort(key=lambda tup: tup[1], reverse=True)
-        if len(keywords) > 8:
-            keywords = keywords[:8]
+        if len(keywords) > 7:
+            keywords = keywords[:7]
+        if no_genre is True and len(keywords) > 3:
+            keywords = keywords[:3]
         nounArray = []
         print('CHUNKER:\n')
         for chunk in doc.noun_chunks:
@@ -236,7 +238,7 @@ def queryConstructor(msg, Idf, language, year):
             if final_score[len(final_score) - 2] == '+':
                 final_score = final_score[:-2] + ' '
             final_score = ' ?optional1 + ?optional2 + ?optional3 + ?optional4 + ' + final_score
-            final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
+            final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit ' + limit + ' '
     else:
         final_query = ''
     return final_query, too_much
