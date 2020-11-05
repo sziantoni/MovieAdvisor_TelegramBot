@@ -8,8 +8,9 @@ import spacy
 import time
 import csv
 
+
 stopwords = open("stopwords.txt").read().splitlines()
-whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 -')
+whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -')
 prohibited = ['film', 'movie', 'films', 'movies']
 nlp = spacy.load("en_core_web_sm")
 
@@ -21,14 +22,16 @@ def IDFcomputation(titles,uniqueWords, dictionary):
     idfDict = dict.fromkeys(uniqueWords, 0)
     for i in range(0, len(uniqueWords) - 1):
         current = dictionary[:, i]
-        ciao = 1
         for x in current:
             if x != None:
                 if x > 0:
                     idfDict[uniqueWords[i]] += 1
+    parole = ['laugh','wedding', 'and', 'with',  'comedy', 'bride',  'lots',  'groom',  'cia',  'fbi',  'american','agencies',  'spies']
     for word, val in idfDict.items():
         if val > 0:
-            idfDict[word] = math.log(NDocs / float(val))
+            if str(word) in parole:
+                print('-->' + word + ' ' + str(val))
+            idfDict[word] = math.log10(NDocs / float(val))
     return idfDict
 
 def keywordGenerator(db, db_len):
@@ -47,9 +50,11 @@ def keywordGenerator(db, db_len):
         plot = text
         plot = ''.join(filter(whitelist.__contains__, plot))
         plot = plot.split(' ')
+        '''
         for p in plot:
-            if len(p) < 3:
+            if len(p) <= 3 or p in stopwords:
                 plot.remove(p)
+        '''
         bagsOfWords[y][1] = plot
         y += 1
     print('Bag of word fatto!')

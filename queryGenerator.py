@@ -1,5 +1,4 @@
 import csv
-
 import numpy
 import spacy
 import telepot
@@ -12,12 +11,18 @@ punctuation = set("!@#$%^'&*()_+<>?:.,;")
 nlp = spacy.load("en_core_web_sm")
 movies_genres = []
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
+stopwords = open("stopwords.txt").read().splitlines()
 
 
 def queryConstructor(msg, Idf, language, year, no_genre, limit):
     too_much = False
     doc = nlp(msg)
     genre = ''
+
+    for token in doc:
+        if str(token.text) != str(token.lemma_) and '-' not in str(token.lemma_) and len(str(token.text)) > 6:
+            msg = msg + ', ' + str(token.lemma_)
+
     for p in punctuation:
         if p in msg:
             msg = msg.replace(p, "")
@@ -25,14 +30,19 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
     tfidf = {}
     TF = []
     plurals = []
+
+    for word in w:
+        if word in stopwords or len(word) <= 3:
+            w.remove(word)
+
     for k in w:
         if len(k) > 6:
             plural = plur.pluralize(k)
             if plural not in w and plural not in plurals:
-                plurals.append(plural)
+                if plural[-2:] != 'ss':
+                    plurals.append(plural)
     w = w + plurals
-    uniqueWords = list(dict.fromkeys(w))
-    dictionary = []
+
     with open('genres.csv', 'r') as kw_3:
         csv_reader = csv.reader(kw_3, delimiter=';')
         for row in csv_reader:
@@ -40,42 +50,44 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
             movies_genres.append(word)
     movies_genres.append('western')
     misspelled = spell.unknown(w)
+
     for m in misspelled:
         w.remove(m)
         w.append(spell.correction(m))
+
     genres = []
     selected_gnr = []
     c_gnr = 0
-
+    uniqueWords = list(dict.fromkeys(w))
+    dictionary = []
     for u in uniqueWords:
         counter = w.count(u)
         if counter != 0:
             dictionary.append((u, counter))
 
     Nwords = len(w)
+
     for j in dictionary:
         value = j[1] / Nwords
         TF.append((j[0], value))
-
+    kw_mean = 0
     for j in Idf:
         if j[0] in [item[0] for item in TF]:
             for i in TF:
                 if i is not None and i[0] == j[0]:
                     if i[1] > 0 and len(i[0]) > 2:
                         tfidf[i[0]] = float(i[1]) * float(j[1])
+                        kw_mean += float(i[1]) * float(j[1])
+
     keywords = sorted(tfidf.items(), key=lambda values: values[1], reverse=True)
     print(keywords)
     for k in range(0, len(w) - 1):
-        if len(w[k]) > 6:
-            plural = plur.pluralize(w[k])
-            if plural not in w:
-                w.append(plural)
         if w[k] in movies_genres:
             if w[k] == 'race':
                 w[k] = w[k] + 'r'
             gnr = ' BIND((IF (REGEX(lcase(xsd:string(?abstract)), "^(?=.*' + w[
                 k] + ').*$"), 20 , -20)) AS ?genre' + str(c_gnr) + '). '
-            if w[k] not in selected_gnr :
+            if w[k] not in selected_gnr:
                 genres.append(gnr)
                 selected_gnr.append(w[k])
                 c_gnr += 1
@@ -118,21 +130,28 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
                                                                                                                       ' ?subject1 rdfs:label ?subj1 '
         keywords_support = []
         for k in keywords:
-            if k[1] >= 0.1 and k[0] != 'american' and k[0] != 'americans':
+            if k[1] >= 0.05 and k[0] != 'american' and k[0] != 'americans':
                 keywords_support.append(k)
 
         keywords = keywords_support
         keywords.sort(key=lambda tup: tup[1], reverse=True)
+
         if len(keywords) > 7:
             keywords = keywords[:7]
+
         if no_genre is True and len(keywords) > 3:
             keywords = keywords[:3]
+
         nounArray = []
         print('CHUNKER:\n')
+
         for chunk in doc.noun_chunks:
             text = chunk.text.lower()
+
             for key in [item[0] for item in keywords]:
+
                 if key in text:
+
                     if text[0] == 'a' and text[1] == 'n' and text[2] == ' ':
                         text = text[3:]
                     if text[0] == 'a' and text[1] == ' ':
@@ -140,6 +159,7 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
                     if text[0] == 't' and text[1] == 'h' and text[2] == 'e' and text[3] == ' ':
                         text = text[4:]
                     if len(text) - len(key) > 2:
+
                         if text not in nounArray:
                             text = str(text).replace(",", "")
                             if text[0] == ' ':
@@ -158,19 +178,19 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
         for k in keywords:
             print(k)
             penalties = '0'
-            if float(k[1]) > 0.5:
+            if float(k[1]) > 0.20:
                 weight = '30'
-            elif float(k[1]) > 0.4:
+            elif float(k[1]) > 0.18:
                 weight = '25'
-            elif float(k[1]) > 0.3:
+            elif float(k[1]) > 0.16:
                 weight = '20'
-            elif float(k[1]) > 0.2:
+            elif float(k[1]) > 0.14:
                 weight = '10'
-            elif float(k[1]) > 0.1:
+            elif float(k[1]) > 0.10:
                 weight = '5'
-            elif float(k[1]) > 0.8:
+            elif float(k[1]) > 0.08:
                 weight = '3'
-            elif float(k[1]) > 0.7:
+            elif float(k[1]) > 0.06:
                 weight = '2'
             else:
                 weight = '1'
@@ -201,19 +221,19 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
         count = 0
         for k in keywords:
             penalties = '0'
-            if float(k[1]) > 0.5:
+            if float(k[1]) > 0.20:
                 weight = '30'
-            elif float(k[1]) > 0.4:
+            elif float(k[1]) > 0.18:
                 weight = '25'
-            elif float(k[1]) > 0.3:
+            elif float(k[1]) > 0.16:
                 weight = '20'
-            elif float(k[1]) > 0.2:
+            elif float(k[1]) > 0.14:
                 weight = '10'
-            elif float(k[1]) > 0.1:
+            elif float(k[1]) > 0.10:
                 weight = '5'
             elif float(k[1]) > 0.08:
                 weight = '3'
-            elif float(k[1]) > 0.07:
+            elif float(k[1]) > 0.06:
                 weight = '2'
             else:
                 weight = '1'
@@ -232,6 +252,28 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
         checker2 = ' BIND((IF  (regex(xsd:string(?abstract), "short film"),  -100 , 0)) AS ?optional3 ).  '
         checker3 = ' BIND((IF  (regex(xsd:string(?abstract), "short movie"),  -100 , 0)) AS ?optional4 ).  '
         query_second_part = query_second_part + checker + checker1 + checker2 + checker3
+
+        genres = []
+        selected_gnr = []
+        c_gnr = 0
+
+        for k in range(0, len(w) - 1):
+            if w[k] in movies_genres:
+                if w[k] == 'race':
+                    w[k] = w[k] + 'r'
+                gnr = ' BIND((IF (REGEX(lcase(xsd:string(?list)), "^(?=.*' + w[
+                    k] + ').*$"), 20 , -20)) AS ?genre' + str(c_gnr) + '). '
+                if w[k] not in selected_gnr:
+                    genres.append(gnr)
+                    selected_gnr.append(w[k])
+                    c_gnr += 1
+                    query_second_part = query_second_part + gnr
+        scorer = ''
+        for g in range(0, len(genres)):
+            scorer = scorer + '?genre' + str(g) + ' + '
+
+        final_score = scorer + final_score
+
         if final_score == '':
             final_query = query_second_part + ' BIND((?score1 ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit 5 '
         else:
