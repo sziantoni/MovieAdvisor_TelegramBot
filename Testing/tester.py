@@ -11,7 +11,7 @@ punctuation = set("!@#$%^'&*()_+<>?:.,;")
 nlp = spacy.load("en_core_web_sm")
 movies_genres = []
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
-stopwords = open("stopwords.txt").read().splitlines()
+stopwords = open("../stopwords.txt").read().splitlines()
 
 
 def queryConstructor(msg, Idf, language, year, no_genre, limit):
@@ -40,7 +40,7 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
                     plurals.append(plural)
     w = w + plurals
 
-    with open('genres.csv', 'r') as kw_3:
+    with open('../genres.csv', 'r') as kw_3:
         csv_reader = csv.reader(kw_3, delimiter=';')
         for row in csv_reader:
             word = row[0].replace(" ", "")
@@ -79,7 +79,6 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
         if word[0] in stopwords or len(word[0]) <= 3:
             keywords.remove(word)
 
-    print(keywords)
     for k in range(0, len(w) - 1):
         if w[k] in movies_genres:
             if w[k] == 'race':
@@ -102,31 +101,7 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
         scorer = ''
         for g in range(0, len(genres)):
             scorer = scorer + '?genre' + str(g) + ' + '
-        query_first_part = ' PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> ' \
-                           ' PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
-                           ' PREFIX dct:<http://purl.org/dc/terms/> ' \
-                           ' PREFIX dbo:<http://dbpedia.org/ontology/> ' \
-                           ' PREFIX dbpprop:<http://dbpedia.org/property/> ' \
-                           ' PREFIX dbc:<http://dbpedia.org/resource/Category/movie:> ' \
-                           ' SELECT DISTINCT ?score  ?id ?movie ?movie_title ?year1 ?abstract ?link ?list  WHERE{ ' \
-                           ' { SELECT DISTINCT ?score1  ?id ?movie ?movie_title ?year1 ?abstract ?link (group_concat(distinct ?subj1; separator = " ") as ?list) ' \
-                           ' FROM <http://dbpedia.org>  WHERE{ ' \
-                           ' ?movie dbo:wikiPageID ?id. ' \
-                           ' ?movie rdf:type dbo:Film. ' \
-                           ' ?movie rdfs:label ?movie_title ' \
-                           ' FILTER langMatches(lang(?movie_title), "EN"). ' \
-                           ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(
-            language) + '").' \
-                        ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
-                        ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
-                           + genre + \
-                           ' ?movie  dct:subject ?subject. ' \
-                           ' ?subject rdfs:label ?year. ' \
-                           ' filter regex(?year, "\\\\d{4}.films"). ' \
-                           ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
-                           ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
-                                                                                                                      ' ?movie dct:subject ?subject1. ' \
-                                                                                                                      ' ?subject1 rdfs:label ?subj1 '
+
         keywords_support = []
         for k in keywords:
             if k[1] >= 0.05 and k[0] != 'american' and k[0] != 'americans':
@@ -142,7 +117,6 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
             keywords = keywords[:3]
 
         nounArray = []
-        print('CHUNKER:\n')
 
         for chunk in doc.noun_chunks:
             text = chunk.text.lower()
@@ -164,16 +138,21 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
                             if text[0] == ' ':
                                 text = text[:1]
                             nounArray.append(text)
-                            print(text)
         query_second_part = ''
         count = 0
+        tester = ''
+        tester1 = ''
         for noun in nounArray:
             support = str(noun).replace(" ", "_")
             support = support.replace("-", "_")
             nouner = ' BIND((IF (REGEX(xsd:string(?abstract), "' + str(
                 noun) + '"), 15 , -5)) AS ?' + support + 's). '
             scorer = scorer + '?' + support + 's + '
+            tester = tester + ' ?' + support + 's '
+            tester1 = tester1 + ' ?' + support + 's '
             query_second_part = query_second_part + nouner
+        tester_counter = 1
+        print('-----------------------------------------------------------------------------------------------\n')
         for k in keywords:
             print(k)
             penalties = '0'
@@ -198,6 +177,9 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
                     0] + ' ).*$"), ' + weight + ' , ' + penalties + ')) AS ?' + k[0].replace(
                     "-", "") + '). '
                 query_second_part = query_second_part + binder
+                tester = tester + '?' + k[0].replace("-", "") + ' '
+                tester1 = tester1 + '?' + k[0].replace("-", "") + ' ?special' + str(tester_counter) + ' '
+                tester_counter += 1
                 if count == len(keywords) - 1:
                     scorer = scorer + '?' + k[0].replace("-", "")
                 else:
@@ -205,6 +187,32 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
                 count += 1
             elif len(k[0]) <= 2:
                 count += 1
+
+        query_first_part = ' PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> ' \
+                           ' PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' \
+                           ' PREFIX dct:<http://purl.org/dc/terms/> ' \
+                           ' PREFIX dbo:<http://dbpedia.org/ontology/> ' \
+                           ' PREFIX dbpprop:<http://dbpedia.org/property/> ' \
+                           ' PREFIX dbc:<http://dbpedia.org/resource/Category/movie:> ' \
+                           ' SELECT DISTINCT ?score  ?id ?movie ?movie_title ?year1 ?abstract ?link ?list ?genre0 ' + tester1 + '  WHERE{ ' \
+                           ' { SELECT DISTINCT ?score1  ?id ?movie ?movie_title ?year1 ?abstract ?link (group_concat(distinct ?subj1; separator = " ") as ?list) ?genre0 ' + tester + \
+                           ' FROM <http://dbpedia.org>  WHERE{ ' \
+                           ' ?movie dbo:wikiPageID ?id. ' \
+                           ' ?movie rdf:type dbo:Film. ' \
+                           ' ?movie rdfs:label ?movie_title ' \
+                           ' FILTER langMatches(lang(?movie_title), "EN"). ' \
+                           ' ?movie dbp:country ?country FILTER CONTAINS(xsd:string(?country), "' + str(
+            language) + '").' \
+                        ' ?movie foaf:isPrimaryTopicOf ?link  . ' \
+                        ' ?movie dbo:abstract ?abstract  FILTER langMatches(lang(?abstract), "EN") ' \
+                           + genre + \
+                           ' ?movie  dct:subject ?subject. ' \
+                           ' ?subject rdfs:label ?year. ' \
+                           ' filter regex(?year, "\\\\d{4}.films"). ' \
+                           ' BIND(REPLACE(xsd:string(?year), "[^\\\\b0-9\\\\b]", "") AS ?movie_year2) ' \
+                           ' BIND(SUBSTR(str(?movie_year2), 0, 4) AS ?year1)  FILTER(xsd:integer(?year1) > ' + year + ') ' \
+                                                                                                                      ' ?movie dct:subject ?subject1. ' \
+                                                                                                                      ' ?subject1 rdfs:label ?subj1 '
         query_second_part = query_first_part + query_second_part
 
         if scorer != ' ':
@@ -283,4 +291,4 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
             final_query = query_second_part + ' BIND((?score1 + ' + final_score + ') as ?score).  }ORDER BY desc(?score) desc(?year1) limit ' + limit + ' '
     else:
         final_query = ''
-    return final_query, too_much
+    return final_query, too_much, tester1, keywords
