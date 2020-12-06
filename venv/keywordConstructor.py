@@ -7,6 +7,7 @@ import pandas as pd
 import spacy
 import time
 import csv
+from gensim.models import Word2Vec
 
 
 stopwords = open("stopwords.txt").read().splitlines()
@@ -14,24 +15,31 @@ whitelist = set('abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -')
 prohibited = ['film', 'movie', 'films', 'movies']
 nlp = spacy.load("en_core_web_sm")
 
+def cleaning(doc):
+    txt = [token.lemma_ for token in doc]
+    if len(txt) > 2:
+        return ' '.join(txt)
+
 
 # IDF
-def IDFcomputation(titles,uniqueWords, dictionary):
+def IDFcomputation(titles,uniqueWords, bagOfWords):
     import math
-    NDocs = len(titles)
+    NDocs = 15000
     idfDict = dict.fromkeys(uniqueWords, 0)
-    for i in range(0, len(uniqueWords) - 1):
-        current = dictionary[:, i]
-        for x in current:
-            if x != None:
-                if x > 0:
-                    idfDict[uniqueWords[i]] += 1
-    parole = ['laugh','wedding', 'and', 'with',  'comedy', 'bride',  'lots',  'groom',  'cia',  'fbi',  'american','agencies',  'spies']
-    for word, val in idfDict.items():
-        if val > 0:
-            if str(word) in parole:
-                print('-->' + word + ' ' + str(val))
-            idfDict[word] = math.log10(NDocs / float(val))
+    index = 0
+    c = False
+    for j in bagOfWords:
+        for i in j[1]:
+            if i in uniqueWords:
+                idfDict[i] += 1
+    print('would ' + str(idfDict['would']))
+    print('and ' + str(idfDict['and']))
+    print('policeman ' + str(idfDict['policeman']))
+    print('two ' + str(idfDict['two']))
+    print('comedy ' + str(idfDict['comedy']))
+    for t, v in idfDict.items():
+        if v > 0:
+            idfDict[t] = math.log10(NDocs / float(v))
     return idfDict
 
 def keywordGenerator(db, db_len):
@@ -49,13 +57,11 @@ def keywordGenerator(db, db_len):
         text = str(x).lower()
         plot = text
         plot = ''.join(filter(whitelist.__contains__, plot))
-        plot = plot.split(' ')
-        '''
-        for p in plot:
-            if len(p) <= 3 or p in stopwords:
-                plot.remove(p)
-        '''
-        bagsOfWords[y][1] = plot
+        doc = nlp(plot)
+        plot = cleaning(doc)
+        if  isinstance(plot, str):
+            plot = plot.split(' ')
+        bagsOfWords[y][1] = list(set(plot))
         y += 1
     print('Bag of word fatto!')
     uniqueWords = bagsOfWords[0][1]
@@ -67,21 +73,13 @@ def keywordGenerator(db, db_len):
     # creo il dizionario con le occorrenze di ogni parola
     uniqueWords = list(uniqueWords)
     print('Unique word fatto!')
-    dictionary = numpy.empty(shape=(db_len, len(uniqueWords)), dtype=object)
-    y=0
-    for x in range(0, len(bagsOfWords)):
-        numOfWords = dict.fromkeys(uniqueWords, 0)
-        numbers = []
-        if bagsOfWords[y][1] != None:
-            for word in bagsOfWords[y][1]:
-                if word != '':
-                    numOfWords[word] += 1
-            dictionary[y,:]= [*numOfWords.values()]
-        y += 1
+    #dictionary = numpy.empty(shape=(db_len, len(uniqueWords)), dtype=object)
+    list_of_words = []
+    Idf = IDFcomputation(titles, uniqueWords,bagsOfWords)
 
-    Idf = IDFcomputation(titles, uniqueWords, dictionary)
-    keyword_1 = open('kw1.csv', 'w', newline='')
+    keyword_1 = open('kw2.csv', 'w', newline='')
     writer1 = csv.writer(keyword_1, delimiter=';')
+
     for j, v in Idf.items():
         writer1.writerow((j,v))
 
@@ -89,3 +87,5 @@ def keywordGenerator(db, db_len):
 
 
 
+db = pd.read_csv(r"C:\Users\Stefano\Desktop\wikidata15000.csv", sep=';', header=None)
+idf = keywordGenerator(db, 15000)

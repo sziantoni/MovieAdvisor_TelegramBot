@@ -1,35 +1,46 @@
 import time
 import telepot
+from gensim.models import Word2Vec
 from telepot.loop import MessageLoop
 import sparql
 from SPARQLWrapper import SPARQLWrapper, JSON
 import spacy
 import queryGenerator as qG
 from Testing import testerResult as tR, tester as tG
-from keyboards import k1, k6
+from keyboards import k1, k6, k7
 import inlineKeyboardSelector
 import csv
 
 language = 'United States'
-year = '1950'
+year = '2000'
 msg_id = 0
 s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
 sparql = SPARQLWrapper(endpoint='http://dbpedia.org/sparql')
 keyboards = ['Settings', 'Start', 'Nationality', 'Year', 'United States', 'Italy', 'France', 'England', 'Back', '1900',
              '1920', '1950', '1980', '1990', '2000', '2010', 'Continue']
-#db = pd.read_csv(r"C:\Users\Stefano\Desktop\wikidata15000.csv", sep=';', header=None)
-#idf = kc.keywordGenerator(db, 15000)
+# db = pd.read_csv(r"C:\Users\Stefano\Desktop\wikidata15000.csv", sep=';', header=None)
+# idf = kc.keywordGenerator(db, 15000)
+
+
+english_dictionary = []
+
+with open('en_GB.csv', 'r') as kw_1:
+    csv_reader = csv.reader(kw_1, delimiter=';')
+    for row in csv_reader:
+        if len(str(row[0])) > 3:
+            english_dictionary.append(row[0])
 
 idf = []
-with open('kw1.csv', 'r') as kw_1:
+
+with open('venv/kw2.csv', 'r') as kw_1:
     csv_reader = csv.reader(kw_1, delimiter=';')
     for row in csv_reader:
         idf.append((row[0], row[1]))
 
 nlp = spacy.load("en_core_web_sm")
 sparql.setTimeout(50000)
-
 f = open("results.txt", "w+")
+
 
 def on_chat_message(msg):
     global language
@@ -46,84 +57,47 @@ def on_chat_message(msg):
     else:
         if msg['text'] in keyboards:
             language, year = inlineKeyboardSelector.selectKeyboard(chat_id, msg['text'], language, year)
-        elif msg['text'] == 'Give me other results':
-            final_query, too_much = qG.queryConstructor(previous_msg, idf, language, year, True, '10')
-            print(final_query)
-            sparql.setQuery(final_query)
-            sparql.setReturnFormat(JSON)
-            ret = sparql.query().convert()
-            abstracts = []
-            links = []
-            titles = []
-            result_checker = False
-            previous_value = 0
-            count = 0
-            for result in ret["results"]["bindings"]:
-                print(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']))
-                if (int(result['score']['value']) > previous_value - 30 or (
-                        count == 0 and int(result['score']['value']) > 10) ) and result["movie_title"]["value"] not in titles_ and count < 3:
-                    titles.append(result["movie_title"]["value"])
-                    abstracts.append(
-                        (result["abstract"]["value"][:300] + '....') if len(result["abstract"]["value"]) > 300 else
-                        result["abstract"]["value"])
-                    links.append(result["link"]["value"])
-                    result_checker = True
-                    previous_value = int(result['score']['value'])
-                    count += 1
-            if result_checker is True:
-                bot.sendMessage(chat_id, "I suggest you..\n\n")
-                i = 0
-                added = []
-                for x in titles:
-                    if x not in added:
-                        bot.sendMessage(chat_id, titles[i].upper() + '\n\n' + abstracts[i] + '\n\n' + links[i])
-                        added.append(x)
-                    i += 1
-                if too_much is True:
-                    bot.sendMessage(chat_id,
-                                    "WARNING! You have written too much text, the search excluded less significant keywords ")
-                bot.sendMessage(chat_id, "Write again if you want to search another films")
-            else:
-                bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message",
-                                reply_markup=k6)
         else:
             no_genre = False
             titles_ = []
             too_much = False
-            final_query, too_much, tester1, keywords = tG.queryConstructor(msg['text'], idf, language, year, False, '5')
+            final_query, too_much, tester1, keywords = tG.queryConstructor(msg['text'], idf, language, year,
+                                                                                   False, '5',english_dictionary)
+            print(final_query)
             previous_msg = msg['text']
-            if final_query != '':
+            if final_query != '' and len(msg['text'].split(' ')) > 2:
                 bot.sendMessage(chat_id, "OK give me a few seconds to look for some movies to recommend..\n")
-                #print(final_query)
                 sparql.setQuery(final_query)
                 sparql.setReturnFormat(JSON)
                 ret = sparql.query().convert()
-                '''
                 abstracts = []
                 links = []
                 titles = []
                 result_checker = False
-                previous_value = 0
+                limit_value = 0
                 count = 0
-                '''
-                f.write("-----------------------------------------------------------------\n")
-                f.write("QUERY: " + msg['text'])
-                f.write(" ")
-                tr = tR.manageResults(ret, tester1, keywords, f)
-                f.write("-----------------------------------------------------------------\n")
-                '''
+                tR.manageResults(ret, tester1, keywords, f)
                 for result in ret["results"]["bindings"]:
-                    #print(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']))
-                    if int(result['score']['value']) > previous_value - 30 or (
-                            count == 0 and int(result['score']['value']) > 10) or int(result['score']['value']) > 90:
-                        titles.append(result["movie_title"]["value"])
-                        abstracts.append(
-                            (result["abstract"]["value"][:300] + '....') if len(result["abstract"]["value"]) > 300 else
-                            result["abstract"]["value"])
-                        links.append(result["link"]["value"])
-                        result_checker = True
-                        previous_value = int(result['score']['value'])
-                        count += 1
+                    print(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']))
+                    if str(result["movie_title"]["value"]) != 'The Cutter':
+                        if count == 0 or int(result['score']['value']) >= limit_value:
+                            titles.append(result["movie_title"]["value"])
+                            abstracts.append(
+                                (result["abstract"]["value"][:300] + '....') if len(
+                                    result["abstract"]["value"]) > 300 else
+                                result["abstract"]["value"])
+                            links.append(result["link"]["value"])
+                            result_checker = True
+                            if count == 0:
+                                top_value = int(result['score']['value'])
+                                if 0 <= top_value <= 2:
+                                    limit_value = -4
+                                elif top_value > 0:
+                                    limit_value = int(top_value / 2)
+                                else:
+                                    limit_value = int(top_value * 2)
+                            count += 1
+                print('LIMIT:' + str(limit_value))
                 if result_checker is True:
                     bot.sendMessage(chat_id, "I suggest you..\n\n")
                     i = 0
@@ -137,12 +111,12 @@ def on_chat_message(msg):
                     if too_much is True:
                         bot.sendMessage(chat_id,
                                         "WARNING! You have written too much text, the search excluded less significant keywords ")
-                
+
                     bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=k7)
                 else:
                     bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message",
                                     reply_markup=k6)
-                '''
+
                 bot.sendMessage(chat_id, 'done')
             else:
                 bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message", reply_markup=k6)

@@ -1,44 +1,39 @@
 
-def manageResults(ret, tester1, keywords, f):
-    previous_value = 0
+def manageResults(ret, tester1, keywords,f):
     count = 0
     variable = tester1.split(' ')
     for v in variable:
         if len(v) <= 1:
             variable.remove(v)
     print('-----------------------------------------------------------------------------------------------\n')
-    f.write('KEYWORDS: \n')
+    #f.write('-----------------------------------------------------------------------------------------------\n')
     for k in keywords:
-        f.write(str(k[0]) + ' : ' + str(k[1])  + '\n')
+        f.write(str(k) + '\n')
+    limit_value = 1
     for result in ret["results"]["bindings"]:
-        print(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']))
-        f.write("\n")
-        f.write('\n' + str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']) + '\n')
-        f.write("\n")
-        scoreList = ''
-        for v in variable:
-            v = v.replace('?' ,'')
-            if result[v]['value'] != '0':
-                scoreList = scoreList + ' | ' + v + ' : ' + str(result[v]['value'])
-        f.write("\n")
-        print(scoreList)
-        f.write(scoreList  + '\n')
-        f.write("\n")
-        print('LINK: ' + result["link"]["value"])
-        print('ABSTRACT: ' + result["abstract"]["value"])
-        f.write('LINK: ' + result["link"]["value"] + '\n')
-        f.write("\n")
-        f.write('ABSTRACT: ' + result["abstract"]["value"] + '\n')
-        f.write("\n")
-        if int(result['score']['value']) > previous_value - 30 or (
-                count == 0 and int(result['score']['value']) > 10) or int(result['score']['value']) > 90:
-            print('-VALIDO-\n')
-            f.write('-VALIDO-\n')
-            f.write("\n")
-            previous_value = int(result['score']['value'])
-            count += 1
-        else:
-            print('-NON VALIDO-\n')
-            f.write('-NON VALIDO-\n')
-            f.write("\n")
+        if str(result["movie_title"]["value"]) != 'The Cutter':
+            print(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']))
+            #f.write(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']))
+            scoreList = ''
+            for v in variable:
+                v = v.replace('?' ,'')
+                if result[v]['value'] != '0':
+                    scoreList = scoreList + ' | ' + v + ' : ' + str(result[v]['value'])
+            print(scoreList)
+            print("Top KW VALUE " + str(result["top_kw"]["value"]))
+            print('LINK: ' + result["link"]["value"])
+            #f.write('LINK: ' + result["link"]["value"])
+            print('ABSTRACT: ' + result["abstract"]["value"])
+            print('SUBJECT: ' + result["list"]["value"])
+            if count == 0 or int(result['score']['value']) >= limit_value:
+                print('-VALIDO-\n')
+                #f.write('-VALIDO-\n')
+                if count == 0:
+                    top_value = int(result['score']['value'])
+                    limit_value = int(top_value / 1.5)
+                count += 1
+            else:
+                print('-NON VALIDO-\n')
+                #f.write('-NON VALIDO-\n')
     print('-----------------------------------------------------------------------------------------------\n')
+    #.write('-----------------------------------------------------------------------------------------------\n')
