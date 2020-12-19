@@ -8,7 +8,7 @@ import multiprocessing
 from gensim.models import Word2Vec
 
 nlp = spacy.load("en_core_web_sm" ,disable=['ner', 'parser'])
-df = pd.read_csv(r"E:\Desktop Novembre 2020\wikidata.csv", sep=';', header=None)
+df = pd.read_csv(r"C:\Users\Stefano\Desktop\databaseFilmPlotWikipedia.csv", sep=';', header=None)
 print(df.shape)
 
 
