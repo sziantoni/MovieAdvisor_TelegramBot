@@ -10,7 +10,6 @@ def manageResults(ret, tester1, keywords):
     for result in ret["results"]["bindings"]:
         if str(result["movie_title"]["value"]) != 'The Cutter':
             print(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']))
-            #f.write(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']))
             scoreList = ''
             for v in variable:
                 v = v.replace('?' ,'')
@@ -29,4 +28,3 @@ def manageResults(ret, tester1, keywords):
             else:
                 print('-NON VALIDO-\n')
     print('-----------------------------------------------------------------------------------------------\n')
-    #.write('-----------------------------------------------------------------------------------------------\n')

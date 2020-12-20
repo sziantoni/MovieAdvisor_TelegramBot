@@ -1,11 +1,9 @@
 import time
 import telepot
-from gensim.models import Word2Vec
 from telepot.loop import MessageLoop
 import sparql
 from SPARQLWrapper import SPARQLWrapper, JSON
 import spacy
-import queryGenerator as qG
 from Testing import testerResult as tR, tester as tG
 from keyboards import k1, k6, k7
 import inlineKeyboardSelector
@@ -39,11 +37,27 @@ with open('C:/Users/Stefano/PycharmProjects/botTelegram/venv/idf_list.csv', 'r')
     count = 0
     for row in csv_reader:
         idf.append((row[0], row[1]))
-        if 1 < len(row[0]) < 6 and float(row[1]) > 3.0:
-            print(row[0] + ';' + row[1])
     print(count)
 nlp = spacy.load("en_core_web_sm")
 sparql.setTimeout(50000)
+
+list_of_result = []
+query_2 = []
+with open('C:/Users/Stefano/PycharmProjects/botTelegram/test_keyword.csv', 'r') as kw_5:
+    csv_reader = csv.reader(kw_5, delimiter=';')
+    for row in csv_reader:
+        row_0 = ''
+        if 'ï»¿' in row[0]:
+            row_0 = row[0].replace('ï»¿', '')
+        else:
+            row_0 = row[0]
+        clean = str(row[1]).replace("  ", " ")
+        keyword = row[2].split(' ')
+        for k in keyword:
+            if '_' in k:
+                k = k.replace('-', '')
+        query_string = str(row_0).lower() + ' ' + str(clean)
+        query_2.append((query_string, keyword))
 
 
 def on_chat_message(msg):
@@ -61,12 +75,42 @@ def on_chat_message(msg):
     else:
         if msg['text'] in keyboards:
             language, year = inlineKeyboardSelector.selectKeyboard(chat_id, msg['text'], language, year)
+        elif msg['text'] == 'calculate result':
+            TP = 0
+            FP = 0
+            TN = 0
+            FN = 0
+            for l in range(0, len(list_of_result)-1):
+                splitted = list_of_result[l][0].split(' ')
+                selected = [i[0] for i in list_of_result[l][1]]
+                for s in splitted:
+                    nounerr = []
+                    if " " in s:
+                        nounerr = s.split(" ")
+                    if s != ' ':
+                        if s in selected and s in query_2[l][1]:
+                            TP += 1
+                        elif s in selected and s not in query_2[l][1] and len(nounerr) < 2 and s != 'movie':
+                            FP +=1
+                        elif s in list_of_result[l][2] and s not in query_2[l][1]:
+                            TN += 1
+                        elif s in query_2[l][1] and s not in selected:
+                            FN += 1
+            print('FN:' + str(FN))
+            print('TN:' + str(TN))
+            print('TP:' + str(TP))
+            print('FP:' + str(FP))
+            precision = TP/(TP+FP)
+            recall = TP/(TP+FN)
+            print('Precision: ' + str(precision))
+            print('Recall: ' + str(recall))
+            print('F-Measure: ' + str((2*precision*recall)/(precision+recall)))
+
         else:
             no_genre = False
             titles_ = []
-            final_query, too_much, tester1, keywords = tG.queryConstructor(msg['text'], idf, language, year,
+            final_query, too_much, tester1, keywords, top_kw, nounArray, selected_gnr = tG.queryConstructor(msg['text'], idf, language, year,
                                                                            False, '5', english_dictionary)
-            print(final_query)
             previous_msg = msg['text']
             if final_query != '' and len(msg['text'].split(' ')) > 2:
                 bot.sendMessage(chat_id, "OK give me a few seconds to look for some movies to recommend..\n")
@@ -119,8 +163,21 @@ def on_chat_message(msg):
                 else:
                     bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message",
                                     reply_markup=k6)
+                #TEST SULLE KEYWORD
+                rest_of_words = []
+                for n in nounArray:
+                    tuples = (n, 0.0)
+                    keywords.append(tuples)
+                for s in selected_gnr:
+                    keywords.append(s)
+                keywords.append(top_kw)
+                lista = msg['text'].split(' ')
+                checker = [i[0] for i in keywords]
+                for l in lista:
+                    if l not in checker:
+                        rest_of_words.append(l)
+                list_of_result.append((msg['text'], keywords, rest_of_words))
 
-                bot.sendMessage(chat_id, 'done')
             else:
                 bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message", reply_markup=k6)
 

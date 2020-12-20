@@ -9,8 +9,6 @@ k2 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Nationality", cal
                          resize_keyboard=True)
 
 k3 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="United States", callback_data='usa'),
-                                    InlineKeyboardButton(text="Italy", callback_data='ita'),
-                                    InlineKeyboardButton(text="France", callback_data='fr'),
                                     InlineKeyboardButton(text="England", callback_data='eng'),
                                     InlineKeyboardButton(text="Back", callback_data='back')]], one_time_keyboard=True,
                          resize_keyboard=True)

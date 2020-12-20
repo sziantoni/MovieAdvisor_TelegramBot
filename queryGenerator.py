@@ -103,6 +103,8 @@ def tfidf_(msg, Idf):
             new_tk = inflection.singularize(tk)
             if new_tk in ck:
                 w.append(new_tk.lower())
+            elif str(token.lemma_) in ck:
+                w.append(str(token.lemma_))
         else:
             w.append(tk)
 

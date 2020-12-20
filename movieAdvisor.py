@@ -45,10 +45,14 @@ def on_chat_message(msg):
     global previous_msg
     content_type, chat_type, chat_id = telepot.glance(msg)
     if msg['text'] == '/start' or msg['text'] in saluti:
+        bot.sendMessage(chat_id, "Hi dear! Let's start!\n")
+        time.sleep(1)
         bot.sendMessage(chat_id, "WELCOME TO MOVIE ADVISOR! \n\nTold me what kind of movies you want to see"
                                  "\nWrite a short description about the type of film you want to see"
-                                 "\n\nDefault Nation: United States\n\nDefault Year: 2000",
+                                 "\n\nDefault Year: 2000\n\n",
                         reply_markup=k1)
+        time.sleep(0.5)
+        bot.sendMessage(chat_id, "I'm here I'm listening to you\n")
     else:
         if msg['text'] in keyboards:
             language, year = inlineKeyboardSelector.selectKeyboard(chat_id, msg['text'], language, year)
@@ -113,8 +117,10 @@ def on_chat_message(msg):
                     if too_much is True:
                         bot.sendMessage(chat_id,
                                         "WARNING! You have written too much text, the search excluded less significant keywords ")
-
-                    bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=k7)
+                    if no_genre is False:
+                        bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=k7)
+                    else:
+                        bot.sendMessage(chat_id, "Write again if you want to search another films")
                 else:
                     bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message",
                                     reply_markup=k6)

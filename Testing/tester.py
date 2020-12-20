@@ -14,6 +14,7 @@ stopwords = open("C:/Users/Stefano/PycharmProjects/botTelegram/Testing/stopwords
 w2v_model = Word2Vec.load("C:/Users/Stefano/PycharmProjects/botTelegram/venv/word2vec.model")
 
 
+
 def defineGenres(w, keywords):
     genres = []
     selected_gnr = []
@@ -103,6 +104,8 @@ def tfidf_(msg, Idf):
             new_tk = inflection.singularize(tk)
             if new_tk in ck:
                 w.append(new_tk.lower())
+            elif str(token.lemma_) in ck:
+                w.append(str(token.lemma_))
         else:
             w.append(tk)
 
@@ -200,7 +203,8 @@ def top_keyword(keywords, english_dictionary):
         top_kw = support[0]
         remove = top_kw
     elif str(support[0][0][0].upper() + support[0][0][1:len(support[0][0])]) in english_dictionary and \
-            support[0][0] not in stopwords and keywords[0][0] not in movies_genres and support[0][0] != 'science' and support[0][0] != 'fiction':
+            support[0][0] not in stopwords and keywords[0][0] not in movies_genres and support[0][0] != 'science' and \
+            support[0][0] != 'fiction':
         top_kw = (str(support[0][0][0].upper() + support[0][0][1:len(support[0][0])]), support[0][1])
         remove = support[0]
 
@@ -358,7 +362,8 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit, english_dictiona
 
     print('Top KW: ')
     print(top_kw)
-    keywords, genre, scorer, selected_genres, gnr_score, kw_gnr, mean = keyword_filter(keywords, Nwords, no_genre, w, genre)
+    keywords, genre, scorer, selected_genres, gnr_score, kw_gnr, mean = keyword_filter(keywords, Nwords, no_genre, w,
+                                                                                       genre)
 
     print('\nKeyword dopo filtro:\n')
     for k in keywords:
@@ -429,4 +434,4 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit, english_dictiona
             final_query = query_second_part + ' BIND((?score1 + ' + final_score + ' ) as ?score).  }ORDER BY desc(?score) desc(?year1) limit ' + limit + ' '
     else:
         final_query = ''
-    return final_query, too_much, tester1, keywords
+    return final_query, too_much, tester1, keywords, top_kw, nounArray, selected_gnr
