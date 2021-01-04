@@ -36,7 +36,6 @@ def IDFcomputation(titles,uniqueWords, bagOfWords):
     return idfDict
 
 def keywordGenerator(db, db_len):
-    keyword_6 = open('keywords.csv', 'w', newline='')
     seconds = time.time()
     bags = numpy.empty(shape=(db_len, 2), dtype=object)
     titles = []
@@ -54,8 +53,6 @@ def keywordGenerator(db, db_len):
         plot = cleaning(doc)
         if  isinstance(plot, str):
             plot = plot.split(' ')
-        if plot is None:
-            ciao = 1
         bags[y][1] = list(set(plot))
         y += 1
     print('Bag of word fatto!')
@@ -71,7 +68,7 @@ def keywordGenerator(db, db_len):
     list_of_words = []
     Idf = IDFcomputation(titles, uniqueWords, bags)
 
-    keyword_1 = open('ide_list.csv', 'w', newline='')
+    keyword_1 = open('idf_list.csv', 'w', newline='')
     writer1 = csv.writer(keyword_1, delimiter=';')
 
     for j, v in Idf.items():

@@ -11,15 +11,15 @@ query = []
 query_2 = []
 query_3 = []
 query_kw = []
-'''
+
 #TEST CON QUERY SCRITTE A MANO
-with open('Testing/nuovoTest.csv', 'r') as kw_3:
+with open('C:/Users/Stefano/PycharmProjects/botTelegram/Testing/nuovoTest.csv', 'r') as kw_3:
     csv_reader = csv.reader(kw_3, delimiter=';')
     for row in csv_reader:
         query.append(row)
 
 #TEST CON KEYWORD DI IMDB
-with open('C:/Users/Stefano/PycharmProjects/botTelegram/TestDaIMDB.csv', 'r') as kw_4:
+with open('C:/Users/Stefano/PycharmProjects/botTelegram/Testing/TestDaIMDB.csv', 'r') as kw_4:
     csv_reader = csv.reader(kw_4, delimiter=';')
     for row in csv_reader:
         row_0 = ''
@@ -31,12 +31,12 @@ with open('C:/Users/Stefano/PycharmProjects/botTelegram/TestDaIMDB.csv', 'r') as
         query_string = str(row_0).lower() + ' ' + str(clean)
         query_string.replace("  ", " ")
         query_2.append(query_string)
-
+'''
 with open('C:/Users/Stefano/PycharmProjects/botTelegram/testNoGenere.csv', 'r') as kw_5:
     csv_reader = csv.reader(kw_5, delimiter=';')
     for row in csv_reader:
         query_3.append(row)
-'''
+
 with open('C:/Users/Stefano/PycharmProjects/botTelegram/test_keyword.csv', 'r') as kw_5:
     csv_reader = csv.reader(kw_5, delimiter=';')
     for row in csv_reader:
@@ -52,7 +52,7 @@ with open('C:/Users/Stefano/PycharmProjects/botTelegram/test_keyword.csv', 'r') 
                 k = k.replace('-', '')
         query_string = str(row_0).lower() + ' ' + str(clean)
         query_2.append((query_string, keyword))
-
+'''
 chrome_diver = 'C:\\Users\\Stefano\\Downloads\\chromedriver.exe'
 driver = webdriver.Chrome(chrome_diver)
 driver.get('https://web.telegram.org/')
@@ -71,11 +71,11 @@ def queryBot(q):
     time.sleep(1)
     invia = '//*[@id="ng-app"]/body/div[1]/div[2]/div/div[2]/div[3]/div/div[3]/div[2]/div/div/div/form/div[3]/button/span[1]'
     driver.find_element_by_xpath(invia).click()
-    time.sleep(1)
+    time.sleep(60)
 
 
 time.sleep(35)
-'''
+
 print("------------------------------------------------------------------ PRIMO TEST ------------------------------------------------------------------")
 print("% Inizio test con Query a mano")
 for q in query:
@@ -86,15 +86,17 @@ print("% Inizio test con IMDB")
 for q_2 in query_2:
     queryBot(q_2)
 print("---------------------------------------------------------------- FINE SECONDO TEST ----------------------------------------------------------------")
+'''
 print("------------------------------------------------------------------ TERZO TEST ------------------------------------------------------------------")
 print("% Inizio test con IMDB")
 for q_3 in query_3:
     queryBot(q_3)
 print("---------------------------------------------------------------- FINE TERZO TEST ----------------------------------------------------------------")
-'''
+
 print("------------------------------------------------------------------ PRIMO TEST ------------------------------------------------------------------")
 print("% Inizio test keyword")
 for q_2 in query_2:
     queryBot(q_2[0])
 print("---------------------------------------------------------------- FINE PRIMO TEST ----------------------------------------------------------------")
+'''
 driver.quit()

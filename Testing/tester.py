@@ -1,18 +1,20 @@
 import csv
+import nltk
 import spacy
 import telepot
 import inflection
 from gensim.models import Word2Vec
 from spellchecker import SpellChecker
-
+from nltk.corpus import words
+from spacy.lang.en.stop_words import STOP_WORDS
+nltk.download('words')
 spell = SpellChecker(distance=1)
 punctuation = set("!@#$%^'&*()_+<>?:.,;")
 nlp = spacy.load("en_core_web_sm")
 movies_genres = []
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
-stopwords = open("C:/Users/Stefano/PycharmProjects/botTelegram/Testing/stopwords.txt").read().splitlines()
+stopwords = set(STOP_WORDS)
 w2v_model = Word2Vec.load("C:/Users/Stefano/PycharmProjects/botTelegram/venv/word2vec.model")
-
 
 
 def defineGenres(w, keywords):
@@ -131,13 +133,16 @@ def tfidf_(msg, Idf):
         value = j[1] / Nwords
         TF.append((j[0], value))
     kw_mean = 0
+    checker = [item[0] for item in TF]
+    checked = []
     for j in Idf:
-        if j[0] in [item[0] for item in TF]:
+        if j[0] in checker and j[0] not in checked:
             for i in TF:
                 if i is not None and i[0] == j[0]:
                     if i[1] > 0 and len(i[0]) > 2:
                         tfidf[i[0]] = float(i[1]) * float(j[1])
                         kw_mean += float(i[1]) * float(j[1])
+                        checked.append(i[0])
 
     keywords = sorted(tfidf.items(), key=lambda values: values[1], reverse=True)
     return keywords, w, Nwords, doc, tfidf
@@ -189,7 +194,7 @@ def keyword_filter(keywords, Nwords, no_genre, w, genre):
     return keywords, genre, scorer, selected_genres, gnr_score, gnr_keyword, mean
 
 
-def top_keyword(keywords, english_dictionary):
+def top_keyword(keywords):
     top_kw = []
     remove = []
     support = keywords.copy()
@@ -198,11 +203,11 @@ def top_keyword(keywords, english_dictionary):
         if s[0] in movies_genres:
             support.remove(s)
 
-    if support[0][0] in english_dictionary and support[0][0] not in stopwords and support[0][
+    if support[0][0] in words.words() and support[0][0] not in stopwords and support[0][
         0] not in movies_genres and support[0][0] != 'science' and support[0][0] != 'fiction':
         top_kw = support[0]
         remove = top_kw
-    elif str(support[0][0][0].upper() + support[0][0][1:len(support[0][0])]) in english_dictionary and \
+    elif str(support[0][0][0].upper() + support[0][0][1:len(support[0][0])]) in words.words() and \
             support[0][0] not in stopwords and keywords[0][0] not in movies_genres and support[0][0] != 'science' and \
             support[0][0] != 'fiction':
         top_kw = (str(support[0][0][0].upper() + support[0][0][1:len(support[0][0])]), support[0][1])
@@ -348,17 +353,16 @@ def subject_keyword(keywords, query_second_part):
     return query_second_part, final_score
 
 
-def queryConstructor(msg, Idf, language, year, no_genre, limit, english_dictionary):
+def queryConstructor(msg, Idf, language, year, no_genre, limit):
     too_much = False
     genre = ''
     tester1 = ''
     keywords, w, Nwords, doc, tfidf = tfidf_(msg, Idf)
-
     print('\nKeyword prima del filtro:\n')
     for k in keywords:
         print(k)
 
-    top_kw, keywords = top_keyword(keywords, english_dictionary)
+    top_kw, keywords = top_keyword(keywords)
 
     print('Top KW: ')
     print(top_kw)
