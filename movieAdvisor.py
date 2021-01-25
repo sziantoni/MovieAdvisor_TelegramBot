@@ -13,14 +13,12 @@ no_genre = False
 titles_ = []
 previous_msg = []
 sparql = SPARQLWrapper(endpoint='http://dbpedia.org/sparql')
-chrome_diver = 'C:\\Users\\Stefano\\Downloads\\chromedriver.exe'
-phantom = 'C:\\Users\\Stefano\\PycharmProjects\\botTelegram\\phantomjs-2.1.1-windows\\bin\\phantomjs'
 
-language = 'United States'
 year = '2000'
 msg_id = 0
-keyboards = ['Settings', 'Start', 'Nationality', 'Year', 'United States', 'Italy', 'France', 'England', 'Back', '1900',
+keyboards = ['Settings', 'Start', 'Nationality', 'Year', '1900',
              '1920', '1950', '1980', '1990', '2000', '2010', 'Continue']
+
 saluti = ['hi', 'Hi', 'HI', 'hei', 'Hei', 'HEI', 'Hello', 'HELLO']
 # db = pd.read_csv(r"C:\Users\Stefano\Desktop\databaseFilmPlotWikipedia.csv", sep=';', header=None)
 # idf = keywordGenerator(db, 17477)
@@ -29,8 +27,7 @@ idf = []
 with open('C:/Users/Stefano/PycharmProjects/botTelegram/venv/idf_list.csv', 'r') as kw_1:
     csv_reader = csv.reader(kw_1, delimiter=';')
     for row in csv_reader:
-        if row[1] != '1' and row[1] != '2' and row[1] != '3':
-            idf.append((row[0], row[1]))
+        idf.append((row[0], row[1]))
 
 nlp = spacy.load("en_core_web_sm")
 added = []
@@ -38,7 +35,6 @@ second_time = False
 
 
 def on_chat_message(msg):
-    global language
     global year
     global no_genre
     global titles_
@@ -55,17 +51,17 @@ def on_chat_message(msg):
         bot.sendMessage(chat_id, "I'm here I'm listening to you\n")
     else:
         if msg['text'] in keyboards:
-            language, year = inlineKeyboardSelector.selectKeyboard(chat_id, msg['text'], language, year)
+            language, year = inlineKeyboardSelector.selectKeyboard(chat_id, msg['text'], year)
         else:
             if msg['text'] == 'Give me other results':
                 no_genre = True
                 msg['text'] = previous_msg
-                final_query, too_much = qG.queryConstructor(msg['text'], idf, language, year, no_genre, '6')
+                final_query, too_much = qG.queryConstructor(msg['text'], idf, year, no_genre, '8')
             else:
                 no_genre = False
                 titles_ = []
                 previous_msg = msg['text']
-                final_query, too_much = qG.queryConstructor(msg['text'], idf, language, year, no_genre, '3')
+                final_query, too_much = qG.queryConstructor(msg['text'], idf, year, no_genre, '3')
             if final_query != '' and len(msg['text'].split(' ')) > 2:
                 a = randint(1, 3)
                 if a == 1:
@@ -118,12 +114,14 @@ def on_chat_message(msg):
                         bot.sendMessage(chat_id,
                                         "WARNING! You have written too much text, the search excluded less significant keywords ")
                     if no_genre is False:
-                        bot.sendMessage(chat_id, "Write again if you want to search another films\nOr try 'Give me other results!'", reply_markup=k7)
+                        bot.sendMessage(chat_id,
+                                        "Write again if you want to search another films\nOr try 'Give me other results!'",
+                                        reply_markup=k7)
                     else:
                         bot.sendMessage(chat_id, "Write again if you want to search another films", reply_markup=k8)
                 else:
                     bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message",
-                                   reply_markup=k6)
+                                    reply_markup=k6)
             else:
                 bot.sendMessage(chat_id, "Couldn't extract enough keywords, try rewriting the message", reply_markup=k6)
 

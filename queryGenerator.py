@@ -250,14 +250,16 @@ def bigrams(doc, keywords, query_second_part, scorer):
                 if lenght[0] in words:
                     words.remove(lenght[0])
                     to_remove = [item for item in keywords if item[0] == lenght[0]]
-                    keywords.remove(to_remove[0])
+                    if to_remove[0][1] < 0.08:
+                        keywords.remove(to_remove[0])
                     is_valid = True
                 if lenght[1] in words:
                     words.remove(lenght[1])
                     to_remove = [item for item in keywords if item[0] == lenght[1]]
-                    keywords.remove(to_remove[0])
+                    if to_remove[0][1] < 0.08:
+                        keywords.remove(to_remove[0])
                     is_valid = True
-            if is_valid :
+            if is_valid:
                 nounArray.append(chunk.text)
         elif len(lenght) > 2:
             lenght = lenght[-2:]
@@ -267,12 +269,14 @@ def bigrams(doc, keywords, query_second_part, scorer):
                     if lenght[0] in words:
                         words.remove(lenght[0])
                         to_remove = [item for item in keywords if item[0] == lenght[0]]
-                        keywords.remove(to_remove[0])
+                        if to_remove[0][1] < 0.08:
+                            keywords.remove(to_remove[0])
                         is_valid = True
                     if lenght[1] in words:
                         words.remove(lenght[1])
                         to_remove = [item for item in keywords if item[0] == lenght[1]]
-                        keywords.remove(to_remove[0])
+                        if to_remove[0][1] < 0.08:
+                            keywords.remove(to_remove[0])
                         is_valid = True
                     if is_valid:
                         nounArray.append(txt)
@@ -358,7 +362,7 @@ def subject_keyword(keywords, query_second_part):
     return query_second_part, final_score
 
 
-def queryConstructor(msg, Idf, language, year, no_genre, limit):
+def queryConstructor(msg, Idf, year, no_genre, limit):
     too_much = False
     genre = ''
     keywords, w, Nwords, doc, tfidf = tfidf_(msg, Idf)
