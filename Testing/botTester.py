@@ -17,7 +17,7 @@ with open('C:/Users/Stefano/PycharmProjects/botTelegram/Testing/nuovoTest.csv', 
     csv_reader = csv.reader(kw_3, delimiter=';')
     for row in csv_reader:
         query.append(row)
-
+'''
 #TEST CON KEYWORD DI IMDB
 with open('C:/Users/Stefano/PycharmProjects/botTelegram/Testing/TestDaIMDB.csv', 'r') as kw_4:
     csv_reader = csv.reader(kw_4, delimiter=';')
@@ -31,7 +31,7 @@ with open('C:/Users/Stefano/PycharmProjects/botTelegram/Testing/TestDaIMDB.csv',
         query_string = str(row_0).lower() + ' ' + str(clean)
         query_string.replace("  ", " ")
         query_2.append(query_string)
-'''
+
 with open('C:/Users/Stefano/PycharmProjects/botTelegram/testNoGenere.csv', 'r') as kw_5:
     csv_reader = csv.reader(kw_5, delimiter=';')
     for row in csv_reader:
@@ -71,7 +71,7 @@ def queryBot(q):
     time.sleep(1)
     invia = '//*[@id="ng-app"]/body/div[1]/div[2]/div/div[2]/div[3]/div/div[3]/div[2]/div/div/div/form/div[3]/button/span[1]'
     driver.find_element_by_xpath(invia).click()
-    time.sleep(60)
+    time.sleep(70)
 
 
 time.sleep(35)

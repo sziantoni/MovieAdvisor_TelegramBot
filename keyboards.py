@@ -4,13 +4,7 @@ k1 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Settings", callba
                                     InlineKeyboardButton(text="Start", callback_data='start')]], one_time_keyboard=True,
                          resize_keyboard=True)
 
-k2 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Nationality", callback_data='lang'),
-                                    InlineKeyboardButton(text="Year", callback_data='year')]], one_time_keyboard=True,
-                         resize_keyboard=True)
-
-k3 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="United States", callback_data='usa'),
-                                    InlineKeyboardButton(text="England", callback_data='eng'),
-                                    InlineKeyboardButton(text="Back", callback_data='back')]], one_time_keyboard=True,
+k2 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Year", callback_data='year')]], one_time_keyboard=True,
                          resize_keyboard=True)
 
 k4 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Back", callback_data='back')]], one_time_keyboard=True,
@@ -29,5 +23,9 @@ k6 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Settings", callba
                                     InlineKeyboardButton(text="Continue", callback_data='back')]],
                          one_time_keyboard=True, resize_keyboard=True)
 
-k7 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Give me other results", callback_data='another_one')]],
+k7 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Give me other results", callback_data='another_one'),
+                                    InlineKeyboardButton(text="Settings", callback_data='setting')]],
+                         one_time_keyboard=True, resize_keyboard=True)
+
+k8 = ReplyKeyboardMarkup(keyboard=[[InlineKeyboardButton(text="Settings", callback_data='setting')]],
                          one_time_keyboard=True, resize_keyboard=True)

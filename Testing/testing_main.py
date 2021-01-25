@@ -1,24 +1,25 @@
 import time
 import telepot
-from telepot.loop import MessageLoop
-import sparql
 from SPARQLWrapper import SPARQLWrapper, JSON
+from telepot.loop import MessageLoop
 import spacy
-from Testing import testerResult as tR, tester as tG
+from Testing import testerResult as tR, new_tester as tG
 from keyboards import k1, k6, k7
 import inlineKeyboardSelector
 import csv
+
+sparql = SPARQLWrapper(endpoint='http://dbpedia.org/sparql')
 
 f = open('results_total_key.txt', 'w', newline='')
 nlp = spacy.load("en_core_web_sm")
 language = 'United States'
 year = '2000'
 msg_id = 0
-s = sparql.Service(endpoint='http://dbpedia.org', qs_encoding="uft-8", method="GET")
-sparql = SPARQLWrapper(endpoint='http://dbpedia.org/sparql')
+
 keyboards = ['Settings', 'Start', 'Nationality', 'Year', 'United States', 'Italy', 'France', 'England', 'Back', '1900',
              '1920', '1950', '1980', '1990', '2000', '2010', 'Continue']
 saluti = ['hi', 'Hi', 'HI', 'hei', 'Hei', 'HEI', 'Hello', 'HELLO']
+
 # db = pd.read_csv(r"C:\Users\Stefano\Desktop\wikidata15000.csv", sep=';', header=None)
 # idf = kc.keywordGenerator(db, 15000)
 
@@ -30,56 +31,13 @@ with open('C:/Users/Stefano/PycharmProjects/botTelegram/venv/idf_list.csv', 'r')
     csv_reader = csv.reader(kw_1, delimiter=';')
     count = 0
     for row in csv_reader:
-        '''
-        doc = nlp(row[0])
-        app = ''
-        for t in doc:
-            app = t.lemma_
-            app1 = app[0].upper() + app[1:(len(app))]
-        if app in words.words():
-            check.append((app, row[1]))
-        if app1 in words.words():
-            check.append((app, row[1]))
-        if app[len(app)-2:len(app)] == 'ed' or app1[len(app1)-2:len(app1)] == 'ed':
-            if app[0:len(app)-2] in words.words():
-                check.append((app, row[1]))
-        '''
         idf.append((row[0], row[1]))
     print(count)
-'''
-with open('C:/Users/Stefano/PycharmProjects/botTelegram/Testing/keywordEn_GB.csv', 'r') as kw_1:
-    csv_reader = csv.reader(kw_1, delimiter=';')
-    count = 0
-    for row in csv_reader:
-        idf.append((row[0], row[1]))
-
-f = open('keywordEn_GB.csv', 'w', newline='')
-w = csv.writer(f, delimiter=';' )
-for s in check:
-    w.writerow((s[0],s[1]))
-'''
 
 nlp = spacy.load("en_core_web_sm")
-sparql.setTimeout(50000)
 
 list_of_result = []
 query_2 = []
-
-with open('C:/Users/Stefano/PycharmProjects/botTelegram/test_keyword.csv', 'r') as kw_5:
-    csv_reader = csv.reader(kw_5, delimiter=';')
-    for row in csv_reader:
-        row_0 = ''
-        if 'ï»¿' in row[0]:
-            row_0 = row[0].replace('ï»¿', '')
-        else:
-            row_0 = row[0]
-        clean = str(row[1]).replace("  ", " ")
-        keyword = row[2].split(' ')
-        for k in keyword:
-            if '_' in k:
-                k = k.replace('-', '')
-        query_string = str(row_0).lower() + ' ' + str(clean)
-        query_2.append((query_string, keyword))
 
 
 def on_chat_message(msg):
@@ -144,7 +102,7 @@ def on_chat_message(msg):
                                                                                                             idf,
                                                                                                             language,
                                                                                                             year,
-                                                                                                            False, '5')
+                                                                                                            False, '3')
             previous_msg = msg['text']
             f.write(final_query + '\n')
             f.write('Keywords: \n')
@@ -154,6 +112,7 @@ def on_chat_message(msg):
                 f.write(str(n) + '\n')
             f.write('Top Kw: ' + str(top_kw))
             if final_query != '' and len(msg['text'].split(' ')) > 2:
+                print(final_query)
                 bot.sendMessage(chat_id, "OK give me a few seconds to look for some movies to recommend..\n")
                 sparql.setQuery(final_query)
                 sparql.setReturnFormat(JSON)
@@ -164,9 +123,8 @@ def on_chat_message(msg):
                 result_checker = False
                 limit_value = 0
                 count = 0
-                tR.manageResults(ret, tester1, keywords)
                 for result in ret["results"]["bindings"]:
-                    f.write(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']) + '\n')
+                    print(str(result["movie_title"]["value"]) + ' -> ' + str(result['score']['value']) + '')
                     if str(result["movie_title"]["value"]) != 'The Cutter':
                         if count == 0 or int(result['score']['value']) >= limit_value:
                             titles.append(result["movie_title"]["value"])
@@ -178,17 +136,18 @@ def on_chat_message(msg):
                             result_checker = True
                             if count == 0:
                                 top_value = int(result['score']['value'])
-                                if 0 <= top_value <= 2:
+                                if 0 <= top_value <= 4:
                                     limit_value = -4
                                 elif top_value > 0:
                                     limit_value = int(top_value / 2)
                                 else:
                                     limit_value = int(top_value * 2)
                             count += 1
-                            f.write("Top KW VALUE " + str(result["top_kw"]["value"]) + '\n')
-                            f.write('LINK: ' + result["link"]["value"] + '\n')
-                            f.write('SUBJECT: ' + result["list"]["value"] + '\n')
-                f.write('LIMIT:' + str(limit_value))
+                            print("Top KW VALUE " + str(result["top_kw"]["value"]) + '')
+                            print('LINK: ' + result["link"]["value"] + '')
+                            print('SUBJECT: ' + result["list"]["value"] + '')
+                            print('ABSTRACT: ' + result["abstract"]["value"] + '')
+                print('LIMIT:' + str(limit_value))
                 if result_checker is True:
                     bot.sendMessage(chat_id, "I suggest you..\n\n")
                     i = 0

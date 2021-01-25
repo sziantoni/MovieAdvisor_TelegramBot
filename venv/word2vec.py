@@ -11,7 +11,6 @@ nlp = spacy.load("en_core_web_sm" ,disable=['ner', 'parser'])
 df = pd.read_csv(r"C:\Users\Stefano\Desktop\databaseFilmPlotWikipedia.csv", sep=';', header=None)
 print(df.shape)
 
-
 def cleaning(doc):
     txt = [token.lemma_ for token in doc if not token.is_stop]
     if len(txt) > 2:
@@ -36,18 +35,7 @@ for sent in sentences:
 len(word_freq)
 print(str(sorted(word_freq, key=word_freq.get, reverse=True)[:10]))
 cores = multiprocessing.cpu_count()
-'''
-PRECEDENTE
-w2v_model = Word2Vec(min_count=20,
-                     window=2,
-                     size=300,
-                     sample=6e-5,
-                     alpha=0.03,
-                     min_alpha=0.0007,
-                     negative=20,
-                     workers=cores-1,
-                     sg = 1)
-'''
+
 #ATTUALE
 w2v_model = Word2Vec(min_count=50,
                      window=2,
@@ -69,24 +57,5 @@ t = time()
 w2v_model.train(sentences, total_examples=w2v_model.corpus_count, epochs=30, report_delay=1)
 
 print('Time to train the model: {} mins'.format(round((time() - t) / 60, 2)))
-
-print(str(w2v_model.wv.most_similar(positive=["action"])))
-print('\n')
-print(str(w2v_model.wv.most_similar(positive=["detective"])))
-print('\n')
-print(str(w2v_model.wv.most_similar(positive=["trip"])))
-print('\n')
-print(str(w2v_model.wv.most_similar(positive=["killer"])))
-print('\n')
-print(str(w2v_model.wv.most_similar(positive=["policeman"])))
-print('\n')
-print(str(w2v_model.wv.most_similar(positive=["cowboy"])))
-print('\n')
-print(str(w2v_model.wv.most_similar(positive=["zombie"])))
-print('\n')
-print(str(w2v_model.wv.most_similar(positive=["christmas"])))
-print('\n')
-print(str(w2v_model.wv.most_similar(positive=["ghost"])))
-print('\n')
 
 w2v_model.save('word2vec.model')
