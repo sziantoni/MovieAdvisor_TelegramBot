@@ -24,6 +24,23 @@ with open('C:/Users/Stefano/PycharmProjects/botTelegram/Testing/genres.csv', 'r'
             movies_genres.append(word)
         index += 1
 
+second_version = ' dct:subject ?sub;' \
+                 ' dct:subject ?subject' \
+                 ' FILTER langMatches(lang(?movie_title), "en").' \
+                 ' FILTER langMatches(lang(?abstract), "en").' \
+                 ' FILTER (CONTAINS(xsd:string(?country), "United States")||CONTAINS(xsd:string(?country), "USA"))' \
+                 ' BIND( IF( REGEX(xsd:string(?sub), "\\\\d{4}_"),   xsd:string(?sub),  0) AS ?year_sub)' \
+                 ' BIND(REPLACE(xsd:string(?year_sub), "([^\\\\d]|(?<!\\\\d)\\\\d(?!\\\\d{3}(?!\\\\d))\\\\d*)", "") AS ?year_sub2)' \
+                 'FILTER(xsd:integer(?year_sub2) >= 2000 )'
+
+first_version = ' dbp:released|dbo:releaseDate ?year;' \
+                ' dct:subject ?subject' \
+                ' FILTER langMatches(lang(?movie_title), "en").' \
+                ' FILTER langMatches(lang(?abstract), "en").' \
+                ' FILTER (CONTAINS(xsd:string(?country), "United States")||CONTAINS(xsd:string(?country), "USA"))' \
+                ' BIND(REPLACE(xsd:string(?year), "([^\\\\d]|(?<!\\\\d)\\\\d(?!\\\\d{3}(?!\\\\d))\\\\d*)", "") AS ?year_sub2)' \
+                'FILTER(xsd:integer(?year_sub2) >= 2000 )'
+
 
 def defineGenres(w, keywords):
     genres = []
@@ -102,9 +119,11 @@ def defineGenres_subject(w, query_second_part, gnr_score):
             weight = int(k[1] * 0)
             penalties = -int(k[1] * 70)
 
-        gnr = ' BIND((IF (REGEX(xsd:string(?list), "[^a-zA-Z0-9]' + str(k[0]) + '[^a-zA-Z0-9]", "i"), ' + str(weight) + ' , ' + str(penalties) + ')) AS ?genre' + str(c_gnr) + '). '
+        gnr = ' BIND((IF (REGEX(xsd:string(?list), "[^a-zA-Z0-9]' + str(k[0]) + '[^a-zA-Z0-9]", "i"), ' + str(
+            weight) + ' , ' + str(penalties) + ')) AS ?genre' + str(c_gnr) + '). '
         c_gnr += 1
-        gnr = gnr + ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + str(k[0]) + '[^a-zA-Z0-9]", "i"), ' + str(weight) + ' , ' + str(penalties) + ')) AS ?genre' + str(c_gnr) + '). '
+        gnr = gnr + ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + str(k[0]) + '[^a-zA-Z0-9]", "i"), ' + str(
+            weight) + ' , ' + str(penalties) + ')) AS ?genre' + str(c_gnr) + '). '
 
         if k not in selected_gnr:
             genres.append(gnr)
@@ -251,16 +270,17 @@ def bigrams(doc, keywords, query_second_part, scorer):
                 if lenght[0] in words:
                     words.remove(lenght[0])
                     to_remove = [item for item in keywords if item[0] == lenght[0]]
-                    keywords.remove(to_remove[0])
+                    if to_remove[0][1] < 0.08:
+                        keywords.remove(to_remove[0])
                     is_valid = True
                 if lenght[1] in words:
                     words.remove(lenght[1])
                     to_remove = [item for item in keywords if item[0] == lenght[1]]
-                    keywords.remove(to_remove[0])
+                    if to_remove[0][1] < 0.08:
+                        keywords.remove(to_remove[0])
                     is_valid = True
-            if is_valid :
+            if is_valid:
                 nounArray.append(chunk.text)
-                print(chunk.text)
         elif len(lenght) > 2:
             lenght = lenght[-2:]
             if lenght[0] not in STOP_WORDS:
@@ -269,16 +289,17 @@ def bigrams(doc, keywords, query_second_part, scorer):
                     if lenght[0] in words:
                         words.remove(lenght[0])
                         to_remove = [item for item in keywords if item[0] == lenght[0]]
-                        keywords.remove(to_remove[0])
+                        if to_remove[0][1] < 0.08:
+                            keywords.remove(to_remove[0])
                         is_valid = True
                     if lenght[1] in words:
                         words.remove(lenght[1])
                         to_remove = [item for item in keywords if item[0] == lenght[1]]
-                        keywords.remove(to_remove[0])
+                        if to_remove[0][1] < 0.08:
+                            keywords.remove(to_remove[0])
                         is_valid = True
                     if is_valid:
                         nounArray.append(txt)
-                        print(txt)
     n = ''
     for noun in nounArray:
         support = str(noun).replace(" ", "_")
@@ -292,8 +313,7 @@ def bigrams(doc, keywords, query_second_part, scorer):
     return query_second_part, nounArray, scorer, keywords
 
 
-def abstract_keyword(keywords, query_second_part, scorer,  mean):
-
+def abstract_keyword(keywords, query_second_part, scorer, mean):
     word_vector = w2v_model.wv
     count = 0
     similar_word = []
@@ -307,12 +327,17 @@ def abstract_keyword(keywords, query_second_part, scorer,  mean):
             similar = w2v_model.wv.most_similar(positive=[k[0]])
         else:
             similar = []
-        if len(k[0]) > 2 :
-            if len(similar) > 0 and similar[0][0] not in similar_word and similar[0][0] != 'film' and similar[0][0] != 'movie' and similar[0][0] not in movies_genres and max_number_of_kw < 8 and similar[0][0] not in check:
+        if len(k[0]) > 2:
+            if len(similar) > 0 and similar[0][0] not in similar_word and similar[0][0] != 'film' and similar[0][
+                0] != 'movie' and similar[0][0] not in movies_genres and max_number_of_kw < 8 and similar[0][
+                0] not in check:
 
-                binder = ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + k[0] + '[^a-zA-Z0-9]", "i"), ' + str(weight) + ' , -' + str(penalties) + ')) AS ?' + k[0].replace("-", "") + '). '
+                binder = ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + k[0] + '[^a-zA-Z0-9]", "i"), ' + str(
+                    weight) + ' , -' + str(penalties) + ')) AS ?' + k[0].replace("-", "") + '). '
 
-                binder_similar = ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + similar[0][0] + '[^a-zA-Z0-9]", "i"), -' + str(int(weight / 2)) + ' , ' + str(penalties) + ')) AS ?' + similar[0][0].replace("-", "") + '). '
+                binder_similar = ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + similar[0][
+                    0] + '[^a-zA-Z0-9]", "i"), -' + str(int(weight / 2)) + ' , ' + str(penalties) + ')) AS ?' + \
+                                 similar[0][0].replace("-", "") + '). '
 
                 print('\n' + binder)
                 print('\n' + binder_similar)
@@ -327,7 +352,9 @@ def abstract_keyword(keywords, query_second_part, scorer,  mean):
                     scorer = scorer + '?' + k[0].replace("-", "") + ' + ?' + similar[0][0].replace('-', "") + '+'
                 count += 1
             else:
-                binder = ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + k[0].replace("-", ".") + '[^a-zA-Z0-9]", "i"), ' + str(weight) + ' , -' + str(penalties) + ')) AS ?' + k[0].replace("-", "") + '). '
+                binder = ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + k[0].replace("-",
+                                                                                                ".") + '[^a-zA-Z0-9]", "i"), ' + str(
+                    weight) + ' , -' + str(penalties) + ')) AS ?' + k[0].replace("-", "") + '). '
 
                 print('\n' + binder)
                 query_second_part = query_second_part + binder
@@ -351,7 +378,9 @@ def subject_keyword(keywords, query_second_part):
 
     for k in keywords:
         weight = int(k[1] * 170)
-        binder = ' BIND((IF  (regex(xsd:string(?list), "[^a-zA-Z0-9]' + k[0].replace('-', '.') + '[^a-zA-Z0-9]", "i"),  ' + str(weight) + ' , 0)) AS ?special' + str(s1) + ' ).  '
+        binder = ' BIND((IF  (regex(xsd:string(?list), "[^a-zA-Z0-9]' + k[0].replace('-',
+                                                                                     '.') + '[^a-zA-Z0-9]", "i"),  ' + str(
+            weight) + ' , 0)) AS ?special' + str(s1) + ' ).  '
 
         print('\n' + binder)
 
@@ -380,12 +409,13 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
 
     print('Top KW: ')
     print(top_kw)
-    keywords, genre, scorer, selected_genres, gnr_score, kw_gnr, mean = keyword_filter(keywords, Nwords, no_genre, w, genre)
+    keywords, genre, scorer, selected_genres, gnr_score, kw_gnr, mean = keyword_filter(keywords, Nwords, no_genre, w,
+                                                                                       genre)
 
     if len(keywords) >= 1:
         query_second_part = ''
 
-        query_second_part, nounArray, scorer, keywords = bigrams(doc, keywords, query_second_part,scorer)
+        query_second_part, nounArray, scorer, keywords = bigrams(doc, keywords, query_second_part, scorer)
 
         query_second_part, scorer = abstract_keyword(keywords, query_second_part, scorer, mean)
 
@@ -406,18 +436,12 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
                            ' rdfs:label ?movie_title ;' \
                            ' dbp:country|dbo:country ?country ;' \
                            ' dbo:abstract ?abstract;' \
-                           ' dct:subject ?sub;' \
-                           ' dct:subject ?subject' \
-                           ' FILTER langMatches(lang(?movie_title), "en").' \
-                           ' FILTER langMatches(lang(?abstract), "en").' \
-                           ' FILTER (CONTAINS(xsd:string(?country), "United States")||CONTAINS(xsd:string(?country), "USA"))' \
-                           ' BIND( IF( REGEX(xsd:string(?sub), "\\\\d{4}_"),   xsd:string(?sub),  0) AS ?year_sub)' \
-                           ' BIND(REPLACE(xsd:string(?year_sub), "([^\\\\d]|(?<!\\\\d)\\\\d(?!\\\\d{3}(?!\\\\d))\\\\d*)", "") AS ?year_sub2)' \
-                           'FILTER(xsd:integer(?year_sub2) >= ' + year + ' )'\
+                           + second_version + \
                            '} ' \
                            '}' \
                            ' BIND((IF  (regex(xsd:string(?abstract), "' + \
-                           top_kw[0] + '", "i"),  ' + str(int(top_kw[1] * 70)) + ' , -' + str(int(top_kw[1] * 70)) + ')) AS ?top_kw).'
+                           top_kw[0] + '", "i"),  ' + str(int(top_kw[1] * 70)) + ' , -' + str(
+            int(top_kw[1] * 70)) + ')) AS ?top_kw).'
 
         query_second_part = query_first_part + query_second_part
         query_second_part, final_score = subject_keyword(keywords, query_second_part)
@@ -429,7 +453,7 @@ def queryConstructor(msg, Idf, language, year, no_genre, limit):
         if len(keywords) == 0 and len(nounArray) > 0:
             scorer = scorer[:-2]
 
-        for g in range(0, len(genres)*2):
+        for g in range(0, len(genres) * 2):
             scorer = scorer + '+ ?genre' + str(g)
 
         scorer = scorer.replace("+ +", "+")

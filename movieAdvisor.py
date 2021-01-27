@@ -16,7 +16,7 @@ sparql = SPARQLWrapper(endpoint='http://dbpedia.org/sparql')
 
 year = '2000'
 msg_id = 0
-keyboards = ['Settings', 'Start', 'Nationality', 'Year', '1900',
+keyboards = ['Settings', 'Start', 'Year', '1900', 'Back',
              '1920', '1950', '1980', '1990', '2000', '2010', 'Continue']
 
 saluti = ['hi', 'Hi', 'HI', 'hei', 'Hei', 'HEI', 'Hello', 'HELLO']
@@ -51,7 +51,7 @@ def on_chat_message(msg):
         bot.sendMessage(chat_id, "I'm here I'm listening to you\n")
     else:
         if msg['text'] in keyboards:
-            language, year = inlineKeyboardSelector.selectKeyboard(chat_id, msg['text'], year)
+            year = inlineKeyboardSelector.selectKeyboard(chat_id, msg['text'], year)
         else:
             if msg['text'] == 'Give me other results':
                 no_genre = True
@@ -63,13 +63,17 @@ def on_chat_message(msg):
                 previous_msg = msg['text']
                 final_query, too_much = qG.queryConstructor(msg['text'], idf, year, no_genre, '3')
             if final_query != '' and len(msg['text'].split(' ')) > 2:
-                a = randint(1, 3)
+                a = randint(1, 4)
                 if a == 1:
-                    bot.sendMessage(chat_id, "Good! Give me a few seconds to look for some movies to recommend..\n")
+                    bot.sendMessage(chat_id, "Good! Give me a few seconds to look for some movies to recommend..")
                 elif a == 2:
-                    bot.sendMessage(chat_id, "All right! I'll try to find some movie for you..\n")
+                    bot.sendMessage(chat_id, "All right! I'll try to find some movie for you..")
+                elif a == 3:
+                    bot.sendMessage(chat_id, 'Okay, I\'m going to look for some movies')
+                elif a == 4:
+                    bot.sendMessage(chat_id, 'Mhmm...Now take a look')
                 else:
-                    bot.sendMessage(chat_id, "Ok! Let me think....\n")
+                    bot.sendMessage(chat_id, "Ok! Let me think....")
                 sparql.setQuery(final_query)
                 sparql.setReturnFormat(JSON)
                 ret = sparql.query().convert()

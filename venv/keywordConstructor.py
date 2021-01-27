@@ -26,8 +26,7 @@ def IDFcomputation(titles,uniqueWords, bagOfWords, NDocs):
     c = False
     for j in bagOfWords:
         for i in j[1].keys():
-            if i in uniqueWords:
-                idfDict[i] += 1
+            idfDict[i] += 1
     to_delete = []
     for t, v in idfDict.items():
         if v > 15:
@@ -40,7 +39,7 @@ def IDFcomputation(titles,uniqueWords, bagOfWords, NDocs):
 
 def keywordGenerator(db, db_len):
     seconds = time.time()
-    vectorizer = CountVectorizer(analyzer='word', ngram_range=(1, 1), token_pattern=r'[A-Za-z]*-?[A-Za-z]*', stop_words=None, lowercase=False)
+    vectorizer = CountVectorizer(analyzer='word', ngram_range=(1, 1), token_pattern=r'[A-Za-z]+-?[A-Za-z]*', stop_words=None, lowercase=True)
     analyzer = vectorizer.build_analyzer()
     bags = numpy.empty(shape=(db_len, 2), dtype=object)
     titles = []
@@ -53,7 +52,7 @@ def keywordGenerator(db, db_len):
     for x in db[1]:
         text = str(x)
         plot = analyzer(text)
-        plot = [i.lower() for i in plot if i != '' and len(i) > 2]
+        plot = [i for i in plot if len(i) > 2]
         word_freq = Counter([token for token in plot])
         bags[y][1] = word_freq
         y += 1
@@ -64,13 +63,12 @@ def keywordGenerator(db, db_len):
         if bags[x][1] != None:
             uniqueWords = set(uniqueWords).union(bags[x][1].keys())
 
-    # creo il dizionario con le occorrenze di ogni parola
     uniqueWords = list(uniqueWords)
     print('Unique word fatto!')
     list_of_words = []
     Idf = IDFcomputation(titles, uniqueWords, bags, db_len)
 
-    keyword_1 = open('idf_list2.csv', 'w', newline='')
+    keyword_1 = open('idf_list.csv', 'w', newline='')
     writer1 = csv.writer(keyword_1, delimiter=';')
 
     for j, v in Idf.items():

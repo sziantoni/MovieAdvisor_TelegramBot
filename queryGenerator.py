@@ -115,14 +115,14 @@ def defineGenres_subject(w, query_second_part, gnr_score):
 
 
 def tfidf_(msg, Idf):
-    vectorizer = CountVectorizer(analyzer='word', ngram_range=(1, 1), token_pattern=r'[A-Za-z]*-?[A-Za-z]*',
+    vectorizer = CountVectorizer(analyzer='word', ngram_range=(1, 1), token_pattern=r'[A-Za-z]+-?[A-Za-z]*',
                                  stop_words=None, lowercase=True)
     analyzer = vectorizer.build_analyzer()
     text = str(msg)
     doc = nlp(msg)
     plot = analyzer(text)
     Nwords = len(doc)
-    plot = [i for i in plot if i != '' and len(i) > 2]
+    plot = [i for i in plot if len(i) > 2]
     w = []
     ck = [i[0] for i in Idf]
     for token in plot:
@@ -164,9 +164,9 @@ def tfidf_(msg, Idf):
 
 def keyword_filter(keywords, Nwords, no_genre, w, genre):
     scorer = ''
-    for word in keywords:
-        if word[0] in stopwords or len(word[0]) <= 2:
-            keywords.remove(word)
+    for word_ in keywords:
+        if word_[0] in stopwords or len(word_[0]) <= 2:
+            keywords.remove(word_)
 
     w, genres, selected_genres, gnr_score, gnr_keyword = defineGenres(w, keywords)
 
@@ -216,13 +216,12 @@ def top_keyword(keywords):
     top_kw = []
     remove = []
     support = keywords.copy()
-    word_vector = w2v_model.wv
+
     for s in support:
         if s[0] in movies_genres:
             support.remove(s)
 
-    if support[0][0] not in stopwords and support[0][
-        0] not in movies_genres and support[0][0] != 'science' and support[0][0] != 'fiction':
+    if support[0][0] not in stopwords and support[0][0] not in movies_genres and support[0][0] != 'science' and support[0][0] != 'fiction':
         top_kw = support[0]
         remove = top_kw
     elif support[0][0] not in stopwords and keywords[0][0] not in movies_genres and support[0][0] != 'science' and \
@@ -308,7 +307,7 @@ def abstract_keyword(keywords, query_second_part, scorer,  mean):
             similar = w2v_model.wv.most_similar(positive=[k[0]])
         else:
             similar = []
-        if len(k[0]) > 2 :
+        if len(k[0]) > 2:
             if len(similar) > 0 and similar[0][0] not in similar_word and similar[0][0] != 'film' and similar[0][0] != 'movie' and similar[0][0] not in movies_genres and max_number_of_kw < 8 and similar[0][0] not in check:
 
                 binder = ' BIND((IF (REGEX(xsd:string(?abstract), "[^a-zA-Z0-9]' + k[0] + '[^a-zA-Z0-9]", "i"), ' + str(weight) + ' , -' + str(penalties) + ')) AS ?' + k[0].replace("-", "") + '). '
@@ -374,7 +373,7 @@ def queryConstructor(msg, Idf, year, no_genre, limit):
     if len(keywords) >= 1:
         query_second_part = ''
 
-        query_second_part, nounArray, scorer, keywords = bigrams(doc, keywords, query_second_part,scorer)
+        query_second_part, nounArray, scorer, keywords = bigrams(doc, keywords, query_second_part, scorer)
 
         query_second_part, scorer = abstract_keyword(keywords, query_second_part, scorer, mean)
 

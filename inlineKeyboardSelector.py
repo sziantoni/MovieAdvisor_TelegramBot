@@ -6,13 +6,13 @@ from keyboards import k1, k2, k4, k5
 bot = telepot.Bot("1040963180:AAGh02okW5n0I3wJf0z9EzK7Xh1uGuwis_0")
 
 
-def selectKeyboard(chat_id, text, lang, y):
-    language = lang
+def selectKeyboard(chat_id, text, y):
+
     year = y
     if text == 'Start' or text == 'Continue':
         bot.sendMessage(chat_id, "Write a movie description")
     elif text == 'Settings':
-        bot.sendMessage(chat_id, "Select between Nationality and Year", reply_markup=k2)
+        bot.sendMessage(chat_id, "Select Year", reply_markup=k2)
     elif text == 'Year':
         bot.sendMessage(chat_id, "Choose the year to start from:", reply_markup=k5)
     elif text == 'Back':
@@ -39,4 +39,4 @@ def selectKeyboard(chat_id, text, lang, y):
     elif text == '2000':
         year = '2000'
         bot.sendMessage(chat_id, "Year changed", reply_markup=k4)
-    return language, year
+    return  year
